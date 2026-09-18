@@ -4,9 +4,11 @@
 
 > *"Votre avis améliore nos services"*
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/ataaba/satisclient)
+[![Version](https://img.shields.io/badge/version-1.0.0--dev-blue.svg)](https://github.com/cheikh2108/satisclient)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-En%20développement-yellow.svg)]()
+
+> **✨ État actuel:** Infrastructure technique complète avec PostgreSQL natif, sécurité robuste (JWT, Encryption, Rate limiting), 15 tables BDD créées avec données de test. Backend NestJS et Frontend Next.js configurés et fonctionnels. Développement des modules métier en cours.
 
 ## 📋 À propos
 
@@ -47,15 +49,15 @@ SatisClient transforme chaque avis, réclamation ou suggestion en information ex
 
 ## 🏗️ Architecture technique
 
-### Stack
+### Stack (V1)
 - **Backend:** NestJS (Node.js + TypeScript)
-- **Frontend:** Next.js 14+ (React + TypeScript + App Router)
-- **Database:** PostgreSQL 15+ avec Row Level Security
-- **Cache:** Redis
-- **ORM:** Prisma
-- **Queue:** Bull (Redis-based)
+- **Frontend:** Next.js 14 (React + TypeScript + App Router)
+- **Database:** PostgreSQL 18 natif Windows
+- **ORM:** Prisma 5
+- **Package Manager:** npm (Node.js natif)
 - **UI:** Shadcn/ui + Tailwind CSS
-- **Charts:** Recharts / Tremor
+- **Charts:** Recharts
+- **Sécurité:** JWT + Refresh Tokens, AES-256-GCM, bcrypt (12 rounds)
 
 ### Structure du projet
 
@@ -64,21 +66,22 @@ satisclient/
 ├── backend/                    # API NestJS
 │   ├── src/
 │   │   ├── modules/           # Modules fonctionnels
-│   │   ├── common/            # Utilities partagées
+│   │   ├── common/            # Services sécurité
 │   │   ├── config/            # Configuration
-│   │   └── prisma/            # Schéma + migrations
-│   └── test/
+│   │   └── prisma/            # Service Prisma
+│   ├── prisma/
+│   │   ├── schema.prisma     # Schéma BDD (15 tables)
+│   │   └── seed.ts           # Données de test
+│   └── .env                   # Variables backend
 ├── frontend/                   # Application Next.js
 │   ├── src/
 │   │   ├── app/              # App Router
 │   │   ├── components/       # Composants React
-│   │   ├── lib/              # Utilities
-│   │   └── hooks/            # Custom hooks
-│   └── public/
+│   │   └── lib/              # Utilities
+│   ├── public/
+│   └── .env.local            # Variables frontend
 ├── shared/                     # Types partagés
-├── docker/                     # Configuration Docker
-└── docs/                       # Documentation
-
+└── docs/                       # Documentation complète
 ```
 
 ## 💰 Formules commerciales
@@ -96,41 +99,41 @@ satisclient/
 
 ### Prérequis
 
-- Node.js 18+ et pnpm
-- PostgreSQL 15+
-- Redis 7+
-- Docker & Docker Compose (optionnel)
+- **Node.js 18+** et npm 9+
+- **PostgreSQL 14+** natif Windows/Mac/Linux
+- **Git**
+
+> **Note V1:** Redis, Email, SMS, AI ne sont pas requis pour le développement local.
 
 ### Installation
 
 ```bash
-# Cloner le repository
-git clone https://github.com/ataaba/satisclient.git
+# 1. Cloner le repository
+git clone https://github.com/cheikh2108/satisclient.git
 cd satisclient
 
-# Installation des dépendances
-pnpm install
+# 2. Installer les dépendances
+npm install
 
-# Démarrer les services (PostgreSQL + Redis)
-docker-compose up -d
+# 3. Configurer PostgreSQL
+# Créer l'utilisateur et la base de données :
+# CREATE USER satisclient WITH PASSWORD 'satisclient_password';
+# CREATE DATABASE satisclient_dev OWNER satisclient;
 
-# Configuration environnement
-cp .env.example .env
-# Éditer .env avec vos credentials
+# 4. Configurer l'environnement
+# Le fichier backend/.env existe déjà avec les bonnes valeurs
+# Si besoin, voir .env.example pour référence
 
-# Migrations base de données
+# 5. Générer le client Prisma
 cd backend
-pnpm prisma migrate dev
+npx prisma generate
 
-# Seed données de test
-pnpm prisma db seed
+# 6. Les tables et données de test sont déjà créées
+# Si besoin de recréer : voir docs/GETTING_STARTED.md
 
-# Démarrer le backend (port 3001)
-pnpm run start:dev
-
-# Dans un autre terminal, démarrer le frontend (port 3000)
-cd frontend
-pnpm run dev
+# 7. Démarrer l'application (backend + frontend)
+cd ..
+npm run dev
 ```
 
 ### Accès
@@ -139,9 +142,10 @@ pnpm run dev
 - **API Backend:** http://localhost:3001
 - **API Docs (Swagger):** http://localhost:3001/api/docs
 
-**Compte de test:**
-- Email: `admin@demo.satisclient.sn`
-- Mot de passe: `Demo123!`
+**Comptes de test:**
+- **Admin:** `admin@demo.satisclient.sn` / `Demo123!Pass`
+- **Manager:** `qualite@demo.satisclient.sn` / `Demo123!Pass`
+- **Agent:** `agent@demo.satisclient.sn` / `Demo123!Pass`
 
 ## 📚 Documentation
 
@@ -159,10 +163,13 @@ pnpm run dev
 
 ### Phase 1: MVP Essentiel (En cours - 6 semaines)
 - [x] Architecture définie
-- [x] Schéma base de données
-- [ ] Setup projet NestJS + Next.js
-- [ ] Module Auth (JWT + RBAC)
-- [ ] Module Organizations (multi-tenant)
+- [x] Schéma base de données (15 tables)
+- [x] Setup projet NestJS + Next.js
+- [x] Sécurité (JWT, Encryption, Rate limiting, Brute force protection)
+- [x] PostgreSQL + Prisma configuré
+- [x] Base de données avec données de test
+- [ ] Module Auth (JWT + RBAC) - en cours
+- [ ] Module Organizations (multi-tenant) - en cours
 - [ ] Module Feedback (notation + commentaires)
 - [ ] QR Codes génération
 - [ ] Dashboard basique
@@ -172,16 +179,18 @@ pnpm run dev
 - [ ] Module Complaints complet (workflow)
 - [ ] SLA tracking + alertes
 - [ ] Système d'affectation
-- [ ] Notifications email/SMS
+- [ ] Notifications email/SMS/WhatsApp
 - [ ] Surveys dynamiques
 - [ ] Analytics avancées
+- [ ] Redis (Cache & Queues)
 
 ### Phase 3: Formule Business (6-8 semaines)
-- [ ] Analyse sentiment IA
+- [ ] Analyse sentiment IA (OpenAI)
 - [ ] Escalades automatiques
 - [ ] Rapports planifiés
 - [ ] API REST documentée (Swagger)
 - [ ] Comparaisons multisites avancées
+- [ ] Cloud Storage (S3/MinIO)
 
 ### Phase 4: Formule Institution (Sur devis)
 - [ ] SSO (SAML, OAuth2)
@@ -189,6 +198,8 @@ pnpm run dev
 - [ ] White-labeling
 - [ ] Sécurité renforcée (2FA)
 - [ ] Support on-premise
+- [ ] Payment (Stripe/PayDunia)
+- [ ] Monitoring (Sentry)
 
 ## 🎨 Secteurs cibles
 
@@ -219,47 +230,39 @@ pnpm run dev
 ```bash
 # Tests unitaires backend
 cd backend
-pnpm run test
+npm test
 
 # Tests E2E backend
-pnpm run test:e2e
+npm run test:e2e
 
 # Tests frontend
 cd frontend
-pnpm run test
+npm test
 
 # Coverage
-pnpm run test:cov
+npm run test:cov
 ```
 
 ## 📦 Déploiement
 
-### Production
+### Production (Dokploy)
+
+Le déploiement en production se fait via **Dokploy** sur VPS.
 
 ```bash
 # Build backend
 cd backend
-pnpm run build
+npm run build
 
 # Build frontend
 cd frontend
-pnpm run build
+npm run build
 
 # Démarrage production
-pnpm run start:prod
+npm run start:prod
 ```
 
-### Docker
-
-```bash
-# Build images
-docker-compose -f docker-compose.prod.yml build
-
-# Démarrer
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-Voir [Guide de déploiement](docs/deployment/README.md) pour plus de détails.
+Voir [Guide de déploiement Dokploy](docs/DEPLOYMENT.md) pour plus de détails.
 
 ## 🤝 Contribution
 
