@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Sentiment } from '@prisma/client';
 import { Exclude, Expose } from 'class-transformer';
-import { FeedbackStatus } from './update-feedback.dto';
 
 @Exclude()
 export class FeedbackResponseDto {
@@ -17,61 +16,73 @@ export class FeedbackResponseDto {
   @Expose()
   organizationId: string;
 
-  @ApiPropertyOptional({ example: 4, description: 'Note 1-5' })
+  @ApiPropertyOptional({ example: 4, description: 'Note globale 1-5' })
   @Expose()
-  rating?: number;
+  overallRating?: number;
+
+  @ApiPropertyOptional({ description: 'Notes par critères' })
+  @Expose()
+  criteriaRatings?: Record<string, number>;
 
   @ApiPropertyOptional({ example: 'Excellent service !' })
   @Expose()
-  message?: string;
+  comment?: string;
 
   @ApiProperty({ example: 'positive', enum: Sentiment })
   @Expose()
-  sentiment: Sentiment;
+  commentSentiment: Sentiment;
 
-  @ApiPropertyOptional({ example: 'Accueil' })
+  @ApiPropertyOptional({ example: ['service', 'excellent'] })
   @Expose()
-  category?: string;
+  commentKeywords?: string[];
 
-  @ApiProperty({ example: 'new', enum: FeedbackStatus })
+  @ApiPropertyOptional({ example: '123e4567-e89b-12d3-a456-426614174000' })
   @Expose()
-  status: string;
+  userId?: string;
+
+  @ApiProperty({ example: false })
+  @Expose()
+  isAnonymous: boolean;
 
   @ApiPropertyOptional({ example: 'Jean Dupont' })
   @Expose()
-  customerName?: string;
+  respondentName?: string;
 
   @ApiPropertyOptional({ example: 'jean@example.com' })
   @Expose()
-  customerEmail?: string;
+  respondentEmail?: string;
 
   @ApiPropertyOptional({ example: '+221771234567' })
   @Expose()
-  customerPhone?: string;
+  respondentPhone?: string;
 
-  @ApiPropertyOptional({ example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiPropertyOptional({ example: '2026-09-18' })
   @Expose()
-  customerId?: string;
+  serviceDate?: Date;
 
-  @ApiPropertyOptional({ example: 'qr_code' })
+  @ApiProperty({ example: 'qr_code' })
   @Expose()
-  source?: string;
+  feedbackChannel: string;
 
-  @ApiPropertyOptional({ example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiProperty({ example: false })
   @Expose()
-  assignedToId?: string;
-
-  @ApiPropertyOptional({ example: 'Problème résolu' })
-  @Expose()
-  internalNotes?: string;
-
-  @ApiPropertyOptional({ example: 'Merci pour votre retour' })
-  @Expose()
-  responseMessage?: string;
+  isProcessed: boolean;
 
   @ApiPropertyOptional()
   @Expose()
-  respondedAt?: Date;
+  processedAt?: Date;
+
+  @ApiProperty({ example: false })
+  @Expose()
+  needsResponse: boolean;
+
+  @ApiPropertyOptional()
+  @Expose()
+  responseSentAt?: Date;
+
+  @ApiPropertyOptional()
+  @Expose()
+  ipAddress?: string;
 
   @ApiProperty()
   @Expose()
@@ -97,9 +108,9 @@ export class FeedbackResponseDto {
     name: string;
   };
 
-  @ApiPropertyOptional({ description: 'Utilisateur assigné' })
+  @ApiPropertyOptional({ description: 'Utilisateur si connecté' })
   @Expose()
-  assignedTo?: {
+  user?: {
     id: string;
     firstName: string;
     lastName: string;

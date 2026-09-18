@@ -8,6 +8,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { UsersModule } from '../users/users.module';
 import { PasswordService } from '../../common/services/password.service';
+import { RolesGuard } from './guards/roles.guard';
+import { OrganizationGuard } from './guards/organization.guard';
 
 @Module({
   imports: [
@@ -25,7 +27,7 @@ import { PasswordService } from '../../common/services/password.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, PasswordService],
-  exports: [AuthService, PasswordService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, PasswordService, RolesGuard, OrganizationGuard],
+  exports: [AuthService, PasswordService, RolesGuard, OrganizationGuard],
 })
 export class AuthModule {}

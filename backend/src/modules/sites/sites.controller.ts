@@ -27,12 +27,13 @@ import { UpdateSiteDto } from './dto/update-site.dto';
 import { SiteResponseDto } from './dto/site-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { OrganizationGuard } from '../auth/guards/organization.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Sites')
 @Controller('sites')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, OrganizationGuard)
 @ApiBearerAuth('JWT')
 export class SitesController {
   constructor(private readonly sitesService: SitesService) {}

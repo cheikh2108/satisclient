@@ -27,6 +27,7 @@ import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 import { FeedbackResponseDto } from './dto/feedback-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { OrganizationGuard } from '../auth/guards/organization.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 
@@ -40,9 +41,9 @@ export class FeedbackController {
   @ApiOperation({
     summary: 'Créer un nouveau feedback (PUBLIC)',
     description:
-      'Route publique pour soumettre un feedback. ' +
-      'Peut être anonyme (pas de customerName) ou identifié. ' +
-      'Le sentiment est détecté automatiquement.',
+      'Route publique pour soumettre un feedback de satisfaction. ' +
+      'Peut être anonyme ou identifié. ' +
+      'Le sentiment est détecté automatiquement à partir du commentaire et/ou du rating.',
   })
   @ApiResponse({
     status: 201,
@@ -57,18 +58,25 @@ export class FeedbackController {
     status: 404,
     description: 'Site non trouvé',
   })
-  create(@Body() createFeedbackDto: CreateFeedbackDto): Promise<FeedbackResponseDto> {
+  create(
+    @Body() createFeedbackDto: CreateFeedbackDto,
+  ): Promise<FeedbackResponseDto> {
     return this.feedbackService.create(createFeedbackDto);
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.super_admin, UserRole.org_admin, UserRole.quality_manager, UserRole.service_manager)
+  @UseGuards(JwtAuthGuard, RolesGuard, OrganizationGuard)
+  @Roles(
+    UserRole.super_admin,
+    UserRole.org_admin,
+    UserRole.quality_manager,
+    UserRole.service_manager,
+  )
   @ApiBearerAuth('JWT')
   @ApiOperation({
     summary: 'Liste tous les feedbacks',
     description:
-      'Filtre par organisation, site, sentiment, statut, note. ' +
+      'Filtre par organisation, site, sentiment, rating, dates. ' +
       'Pagination disponible.',
   })
   @ApiQuery({
@@ -90,16 +98,28 @@ export class FeedbackController {
     description: 'Filtrer par sentiment (positive, neutral, negative, unknown)',
   })
   @ApiQuery({
-    name: 'status',
-    required: false,
-    type: String,
-    description: 'Filtrer par statut (new, assigned, in_progress, resolved, closed)',
-  })
-  @ApiQuery({
-    name: 'rating',
+    name: 'minRating',
     required: false,
     type: Number,
-    description: 'Filtrer par note (1-5)',
+    description: 'Note minimum (1-5)',
+  })
+  @ApiQuery({
+    name: 'maxRating',
+    required: false,
+    type: Number,
+    description: 'Note maximum (1-5)',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: String,
+    description: 'Date de début (ISO 8601)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: String,
+    description: 'Date de fin (ISO 8601)',
   })
   @ApiQuery({
     name: 'skip',
@@ -119,7 +139,7 @@ export class FeedbackController {
     name: 'includeRelations',
     required: false,
     type: Boolean,
-    description: 'Inclure site, organisation, assignedTo',
+    description: 'Inclure site, organisation, user',
     example: true,
   })
   @ApiResponse({
@@ -139,8 +159,10 @@ export class FeedbackController {
     @Query('organizationId') organizationId?: string,
     @Query('siteId') siteId?: string,
     @Query('sentiment') sentiment?: string,
-    @Query('status') status?: string,
-    @Query('rating') rating?: number,
+    @Query('minRating') minRating?: number,
+    @Query('maxRating') maxRating?: number,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
     @Query('skip') skip?: number,
     @Query('take') take?: number,
     @Query('includeRelations') includeRelations?: boolean,
@@ -149,8 +171,10 @@ export class FeedbackController {
       organizationId,
       siteId,
       sentiment,
-      status,
-      rating: rating ? +rating : undefined,
+      minRating: minRating ? +minRating : undefined,
+      maxRating: maxRating ? +maxRating : undefined,
+      startDate,
+      endDate,
       skip: skip ? +skip : undefined,
       take: take ? +take : undefined,
       includeRelations: includeRelations === true,
@@ -158,13 +182,13 @@ export class FeedbackController {
   }
 
   @Get('stats')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, OrganizationGuard)
   @Roles(UserRole.super_admin, UserRole.org_admin, UserRole.quality_manager)
   @ApiBearerAuth('JWT')
   @ApiOperation({
     summary: 'Statistiques des feedbacks',
     description:
-      'Total, par sentiment, par statut, note moyenne. ' +
+      'Total, par sentiment, note moyenne, taux de réponse. ' +
       'Période: 7d, 30d, 90d, 1y.',
   })
   @ApiQuery({
@@ -187,6 +211,19 @@ export class FeedbackController {
   @ApiResponse({
     status: 200,
     description: 'Statistiques',
+    schema: {
+      example: {
+        period: '30d',
+        total: 450,
+        bySentiment: {
+          positive: 320,
+          neutral: 80,
+          negative: 50,
+        },
+        averageRating: 4.2,
+        responseRate: 0.85,
+      },
+    },
   })
   getStats(
     @Query('organizationId') organizationId?: string,
@@ -201,7 +238,7 @@ export class FeedbackController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, OrganizationGuard)
   @Roles(
     UserRole.super_admin,
     UserRole.org_admin,
@@ -212,7 +249,7 @@ export class FeedbackController {
   @ApiBearerAuth('JWT')
   @ApiOperation({
     summary: 'Récupérer un feedback par ID',
-    description: 'Inclut les relations (site, organisation, assignedTo).',
+    description: 'Inclut les relations (site, organisation, user).',
   })
   @ApiParam({
     name: 'id',
@@ -227,24 +264,25 @@ export class FeedbackController {
     status: 404,
     description: 'Feedback non trouvé',
   })
-  findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<FeedbackResponseDto> {
+  findOne(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<FeedbackResponseDto> {
     return this.feedbackService.findOne(id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, OrganizationGuard)
   @Roles(
     UserRole.super_admin,
     UserRole.org_admin,
     UserRole.quality_manager,
     UserRole.service_manager,
-    UserRole.agent,
   )
   @ApiBearerAuth('JWT')
   @ApiOperation({
-    summary: 'Mettre à jour un feedback (traitement)',
+    summary: 'Mettre à jour un feedback (traitement simple)',
     description:
-      'Permet de changer le statut, assigner, ajouter notes internes, réponse client.',
+      'Permet de marquer comme traité et d\'enregistrer les dates de traitement/réponse.',
   })
   @ApiParam({
     name: 'id',
@@ -266,39 +304,6 @@ export class FeedbackController {
     return this.feedbackService.update(id, updateFeedbackDto);
   }
 
-  @Post(':id/assign/:userId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.super_admin, UserRole.org_admin, UserRole.quality_manager, UserRole.service_manager)
-  @ApiBearerAuth('JWT')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Assigner un feedback à un utilisateur',
-    description: 'Change automatiquement le statut en ASSIGNED.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'UUID du feedback',
-  })
-  @ApiParam({
-    name: 'userId',
-    description: 'UUID de l\'utilisateur',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Feedback assigné',
-    type: FeedbackResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Feedback ou utilisateur non trouvé',
-  })
-  assign(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Param('userId', new ParseUUIDPipe()) userId: string,
-  ): Promise<FeedbackResponseDto> {
-    return this.feedbackService.assign(id, userId);
-  }
-
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.super_admin)
@@ -308,7 +313,7 @@ export class FeedbackController {
     summary: 'Supprimer un feedback (SUPER_ADMIN uniquement)',
     description:
       'Suppression physique. Rarement utilisé. ' +
-      'Préférer fermer (status=closed) plutôt que supprimer.',
+      'Préférer archiver ou ignorer plutôt que supprimer.',
   })
   @ApiParam({
     name: 'id',
@@ -322,7 +327,9 @@ export class FeedbackController {
     status: 404,
     description: 'Feedback non trouvé',
   })
-  remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<{ message: string }> {
+  remove(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<{ message: string }> {
     return this.feedbackService.remove(id);
   }
 }

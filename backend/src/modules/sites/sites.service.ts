@@ -189,11 +189,11 @@ export class SitesService {
     // Calculer la note moyenne si des feedbacks existent
     if (dto.feedbacksCount! > 0) {
       const avgResult = await this.prisma.feedback.aggregate({
-        where: { siteId: id, rating: { not: null } },
-        _avg: { rating: true },
+        where: { siteId: id, overallRating: { not: null } },
+        _avg: { overallRating: true },
       });
-      dto.averageRating = avgResult._avg.rating
-        ? Math.round(avgResult._avg.rating * 10) / 10
+      dto.averageRating = avgResult._avg.overallRating
+        ? Math.round(avgResult._avg.overallRating * 10) / 10
         : undefined;
     }
 
@@ -204,7 +204,7 @@ export class SitesService {
    * Récupérer un site par code
    */
   async findByCode(code: string): Promise<SiteResponseDto> {
-    const site = await this.prisma.site.findUnique({
+    const site = await this.prisma.site.findFirst({
       where: { code },
     });
 
@@ -361,7 +361,7 @@ export class SitesService {
    * Vérifier si un code existe déjà
    */
   private async codeExists(code: string): Promise<boolean> {
-    const existing = await this.prisma.site.findUnique({
+    const existing = await this.prisma.site.findFirst({
       where: { code },
     });
     return !!existing;

@@ -1,133 +1,123 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
-  IsEmail,
+  IsInt,
   IsOptional,
-  MinLength,
-  MaxLength,
+  IsBoolean,
+  IsEmail,
   IsUUID,
-  IsNumber,
   Min,
   Max,
-  IsEnum,
+  IsDateString,
+  IsObject,
+  MaxLength,
   Matches,
 } from 'class-validator';
-import { Sentiment } from '@prisma/client';
 
 export class CreateFeedbackDto {
-  @ApiProperty({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'ID du site où le feedback est donné',
-  })
-  @IsUUID('4', { message: 'siteId doit être un UUID valide' })
+  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
+  @IsUUID()
   siteId: string;
 
-  @ApiProperty({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'ID de l\'organisation (hérité du site)',
-  })
-  @IsUUID('4', { message: 'organizationId doit être un UUID valide' })
+  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
+  @IsUUID()
   organizationId: string;
 
-  @ApiPropertyOptional({
-    example: 4,
-    description: 'Note de satisfaction (1-5 étoiles)',
-    minimum: 1,
-    maximum: 5,
-  })
+  // Rating
+  @ApiPropertyOptional({ example: 4, description: 'Note globale 1-5' })
   @IsOptional()
-  @IsNumber()
-  @Min(1, { message: 'La note minimum est 1' })
-  @Max(5, { message: 'La note maximum est 5' })
-  rating?: number;
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  overallRating?: number;
 
   @ApiPropertyOptional({
-    example: 'Excellent service, personnel très accueillant !',
-    description: 'Message du feedback (optionnel si rating fourni)',
-    minLength: 3,
-    maxLength: 5000,
+    description: 'Notes par critères (ex: {"accueil": 5, "propreté": 4})',
+    example: { accueil: 5, propreté: 4, rapidité: 3 },
   })
+  @IsOptional()
+  @IsObject()
+  criteriaRatings?: Record<string, number>;
+
+  // Comment
+  @ApiPropertyOptional({ example: 'Excellent service, très satisfait !' })
   @IsOptional()
   @IsString()
-  @MinLength(3, { message: 'Le message doit contenir au moins 3 caractères' })
-  @MaxLength(5000, { message: 'Le message ne peut pas dépasser 5000 caractères' })
-  message?: string;
+  @MaxLength(5000)
+  comment?: string;
 
-  @ApiPropertyOptional({
-    example: 'positive',
-    description: 'Sentiment automatiquement détecté ou manuel',
-    enum: Sentiment,
-  })
+  // Respondent
+  @ApiPropertyOptional({ example: '123e4567-e89b-12d3-a456-426614174000' })
   @IsOptional()
-  @IsEnum(Sentiment)
-  sentiment?: Sentiment;
+  @IsUUID()
+  userId?: string;
 
-  @ApiPropertyOptional({
-    example: 'Accueil',
-    description: 'Catégorie du feedback',
-  })
+  @ApiPropertyOptional({ example: true, description: 'Feedback anonyme' })
+  @IsOptional()
+  @IsBoolean()
+  isAnonymous?: boolean;
+
+  @ApiPropertyOptional({ example: 'Jean Dupont' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  category?: string;
+  respondentName?: string;
 
-  // Informations client (optionnelles - feedback anonyme possible)
-  @ApiPropertyOptional({
-    example: 'Jean Dupont',
-    description: 'Nom du client (optionnel)',
-  })
+  @ApiPropertyOptional({ example: 'jean@example.com' })
   @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  customerName?: string;
+  @IsEmail()
+  respondentEmail?: string;
 
-  @ApiPropertyOptional({
-    example: 'jean.dupont@example.com',
-    description: 'Email du client (optionnel)',
-  })
-  @IsOptional()
-  @IsEmail({}, { message: 'Email invalide' })
-  customerEmail?: string;
-
-  @ApiPropertyOptional({
-    example: '+221771234567',
-    description: 'Téléphone du client (optionnel, format E.164)',
-  })
+  @ApiPropertyOptional({ example: '+221771234567' })
   @IsOptional()
   @Matches(/^\+[1-9]\d{1,14}$/, {
     message: 'Le téléphone doit être au format international E.164',
   })
-  customerPhone?: string;
+  respondentPhone?: string;
 
+  // Context
   @ApiPropertyOptional({
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'ID du client enregistré (si connecté)',
+    example: '2026-09-18',
+    description: 'Date du service évalué',
   })
   @IsOptional()
-  @IsUUID('4')
-  customerId?: string;
+  @IsDateString()
+  serviceDate?: string;
 
   @ApiPropertyOptional({
-    example: 'mobile',
-    description: 'Source du feedback (mobile, web, qr_code, kiosk, email)',
+    example: 'qr_code',
+    description: 'Canal: web, qr_code, sms, email, kiosk',
   })
   @IsOptional()
   @IsString()
   @MaxLength(50)
-  source?: string;
+  feedbackChannel?: string;
 
   @ApiPropertyOptional({
-    example: '192.168.1.1',
-    description: 'Adresse IP du client',
+    example: 'QR-AGE-001',
+    description: 'Code du QR code utilisé (si feedbackChannel = qr_code)',
   })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  qrCode?: string;
+
+  // Processing flags
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Demande une réponse de l\'organisation',
+  })
+  @IsOptional()
+  @IsBoolean()
+  needsResponse?: boolean;
+
+  // Metadata
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   ipAddress?: string;
 
-  @ApiPropertyOptional({
-    example: 'Mozilla/5.0...',
-    description: 'User agent du navigateur',
-  })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   userAgent?: string;

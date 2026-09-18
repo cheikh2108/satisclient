@@ -4,9 +4,15 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  FeedbackCreatedEvent,
+  FeedbackNegativeEvent,
+  FeedbackProcessedEvent,
+} from '../../events/feedback.events';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
-import { UpdateFeedbackDto, FeedbackStatus } from './dto/update-feedback.dto';
+import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 import { FeedbackResponseDto } from './dto/feedback-response.dto';
 import { plainToInstance } from 'class-transformer';
 import { Sentiment } from '@prisma/client';
@@ -15,13 +21,16 @@ import { Sentiment } from '@prisma/client';
 export class FeedbackService {
   private readonly logger = new Logger(FeedbackService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   /**
    * Créer un nouveau feedback
-   * - Vérifie que le site existe
-   * - Détecte automatiquement le sentiment si non fourni
-   * - Statut initial: NEW
+   * - Vérifie que le site existe et est actif
+   * - Détecte automatiquement le sentiment
+   * - Extrait les mots-clés du commentaire
    */
   async create(createDto: CreateFeedbackDto): Promise<FeedbackResponseDto> {
     // 1. Vérifier que le site existe et est actif
@@ -43,23 +52,40 @@ export class FeedbackService {
       throw new BadRequestException('organizationId ne correspond pas au site');
     }
 
-    // 3. Détection automatique du sentiment si non fourni
-    let sentiment = createDto.sentiment;
-    if (!sentiment && createDto.message) {
-      sentiment = this.detectSentiment(createDto.message, createDto.rating);
-    } else if (!sentiment && createDto.rating) {
-      sentiment = this.getSentimentFromRating(createDto.rating);
-    } else {
-      sentiment = Sentiment.unknown;
-    }
+    // 3. Détection automatique du sentiment
+    const commentSentiment = this.detectSentiment(
+      createDto.comment,
+      createDto.overallRating,
+    );
 
-    // 4. Créer le feedback
+    // 4. Extraction des mots-clés
+    const commentKeywords = createDto.comment
+      ? this.extractKeywords(createDto.comment)
+      : [];
+
+    // 5. Créer le feedback
     try {
       const feedback = await this.prisma.feedback.create({
         data: {
-          ...createDto,
-          sentiment,
-          status: FeedbackStatus.NEW,
+          organizationId: createDto.organizationId,
+          siteId: createDto.siteId,
+          overallRating: createDto.overallRating,
+          criteriaRatings: createDto.criteriaRatings || {},
+          comment: createDto.comment,
+          commentSentiment,
+          commentKeywords,
+          userId: createDto.userId,
+          isAnonymous: createDto.isAnonymous ?? false,
+          respondentName: createDto.respondentName,
+          respondentEmail: createDto.respondentEmail,
+          respondentPhone: createDto.respondentPhone,
+          serviceDate: createDto.serviceDate
+            ? new Date(createDto.serviceDate)
+            : null,
+          feedbackChannel: createDto.feedbackChannel || 'web',
+          needsResponse: createDto.needsResponse ?? false,
+          ipAddress: createDto.ipAddress,
+          userAgent: createDto.userAgent,
         },
         include: {
           site: {
@@ -78,29 +104,77 @@ export class FeedbackService {
         },
       });
 
-      this.logger.log(
-        `Feedback créé: ${feedback.id} - Site: ${createDto.siteId} - Sentiment: ${sentiment}`,
+      this.logger.log({
+        event: 'feedback.created',
+        feedbackId: feedback.id,
+        organizationId: feedback.organizationId,
+        siteId: feedback.siteId,
+        sentiment: commentSentiment,
+        channel: feedback.feedbackChannel,
+      });
+
+      // Émettre événement feedback.created
+      this.eventEmitter.emit(
+        'feedback.created',
+        new FeedbackCreatedEvent(
+          feedback.id,
+          feedback.organizationId,
+          feedback.siteId,
+          site.name,
+          feedback.overallRating,
+          feedback.comment,
+          feedback.commentSentiment,
+          feedback.respondentEmail,
+          feedback.respondentName,
+          feedback.feedbackChannel,
+          feedback.needsResponse,
+          createDto.qrCode,
+        ),
       );
+
+      // Si feedback négatif, émettre événement spécifique
+      if (
+        (feedback.overallRating && feedback.overallRating <= 2) ||
+        commentSentiment === 'negative'
+      ) {
+        this.eventEmitter.emit(
+          'feedback.negative',
+          new FeedbackNegativeEvent(
+            feedback.id,
+            feedback.organizationId,
+            feedback.siteId,
+            site.name,
+            feedback.overallRating,
+            feedback.comment,
+            feedback.respondentEmail,
+            feedback.respondentName,
+          ),
+        );
+      }
 
       return plainToInstance(FeedbackResponseDto, feedback);
     } catch (error) {
-      this.logger.error(`Erreur création feedback: ${error.message}`);
+      this.logger.error({
+        event: 'feedback.create.error',
+        error: error.message,
+      });
       throw error;
     }
   }
 
   /**
    * Récupérer tous les feedbacks
-   * - Filtre par organisation/site/sentiment/statut
+   * - Filtre par organisation/site/sentiment
    * - Pagination
-   * - Inclut les relations
    */
   async findAll(params?: {
     organizationId?: string;
     siteId?: string;
     sentiment?: string;
-    status?: string;
-    rating?: number;
+    minRating?: number;
+    maxRating?: number;
+    startDate?: string;
+    endDate?: string;
     skip?: number;
     take?: number;
     includeRelations?: boolean;
@@ -109,8 +183,10 @@ export class FeedbackService {
       organizationId,
       siteId,
       sentiment,
-      status,
-      rating,
+      minRating,
+      maxRating,
+      startDate,
+      endDate,
       skip = 0,
       take = 50,
       includeRelations = false,
@@ -127,15 +203,27 @@ export class FeedbackService {
     }
 
     if (sentiment) {
-      where.sentiment = sentiment;
+      where.commentSentiment = sentiment;
     }
 
-    if (status) {
-      where.status = status;
+    if (minRating !== undefined || maxRating !== undefined) {
+      where.overallRating = {};
+      if (minRating !== undefined) {
+        where.overallRating.gte = minRating;
+      }
+      if (maxRating !== undefined) {
+        where.overallRating.lte = maxRating;
+      }
     }
 
-    if (rating !== undefined) {
-      where.rating = rating;
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt.gte = new Date(startDate);
+      }
+      if (endDate) {
+        where.createdAt.lte = new Date(endDate);
+      }
     }
 
     const feedbacks = await this.prisma.feedback.findMany({
@@ -158,7 +246,7 @@ export class FeedbackService {
                 name: true,
               },
             },
-            assignedTo: {
+            user: {
               select: {
                 id: true,
                 firstName: true,
@@ -169,7 +257,9 @@ export class FeedbackService {
         : undefined,
     });
 
-    return feedbacks.map((feedback) => plainToInstance(FeedbackResponseDto, feedback));
+    return feedbacks.map((feedback) =>
+      plainToInstance(FeedbackResponseDto, feedback),
+    );
   }
 
   /**
@@ -192,7 +282,7 @@ export class FeedbackService {
             name: true,
           },
         },
-        assignedTo: {
+        user: {
           select: {
             id: true,
             firstName: true,
@@ -210,32 +300,26 @@ export class FeedbackService {
   }
 
   /**
-   * Mettre à jour un feedback (traitement)
+   * Mettre à jour un feedback (traitement simple)
    */
-  async update(id: string, updateDto: UpdateFeedbackDto): Promise<FeedbackResponseDto> {
+  async update(
+    id: string,
+    updateDto: UpdateFeedbackDto,
+  ): Promise<FeedbackResponseDto> {
     // Vérifier que le feedback existe
     await this.findOne(id);
-
-    // Si on ajoute une réponse, marquer respondedAt
-    const data: any = { ...updateDto };
-    if (updateDto.responseMessage && !data.respondedAt) {
-      data.respondedAt = new Date();
-    }
-
-    // Si on change le statut en RESOLVED ou CLOSED, on peut auto-marquer respondedAt
-    if (
-      (updateDto.status === FeedbackStatus.RESOLVED ||
-        updateDto.status === FeedbackStatus.CLOSED) &&
-      !data.respondedAt
-    ) {
-      data.respondedAt = new Date();
-    }
 
     try {
       const feedback = await this.prisma.feedback.update({
         where: { id },
         data: {
-          ...data,
+          isProcessed: updateDto.isProcessed,
+          processedAt: updateDto.processedAt
+            ? new Date(updateDto.processedAt)
+            : undefined,
+          responseSentAt: updateDto.responseSentAt
+            ? new Date(updateDto.responseSentAt)
+            : undefined,
           updatedAt: new Date(),
         },
         include: {
@@ -252,47 +336,42 @@ export class FeedbackService {
               name: true,
             },
           },
-          assignedTo: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-            },
-          },
         },
       });
 
-      this.logger.log(`Feedback mis à jour: ${id} - Statut: ${feedback.status}`);
+      this.logger.log({
+        event: 'feedback.updated',
+        feedbackId: id,
+        isProcessed: feedback.isProcessed,
+      });
+
+      // Si marqué comme traité, émettre événement
+      if (updateDto.isProcessed && !updateDto.processedAt) {
+        this.eventEmitter.emit(
+          'feedback.processed',
+          new FeedbackProcessedEvent(
+            id,
+            feedback.organizationId,
+            feedback.siteId,
+            feedback.respondentEmail,
+          ),
+        );
+      }
 
       return plainToInstance(FeedbackResponseDto, feedback);
     } catch (error) {
-      this.logger.error(`Erreur mise à jour feedback: ${error.message}`);
+      this.logger.error({
+        event: 'feedback.update.error',
+        feedbackId: id,
+        error: error.message,
+      });
       throw error;
     }
   }
 
   /**
-   * Assigner un feedback à un utilisateur
-   */
-  async assign(id: string, userId: string): Promise<FeedbackResponseDto> {
-    // Vérifier que l'utilisateur existe
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException(`Utilisateur non trouvé (id: ${userId})`);
-    }
-
-    return this.update(id, {
-      assignedToId: userId,
-      status: FeedbackStatus.ASSIGNED,
-    });
-  }
-
-  /**
    * Supprimer un feedback (physique)
-   * Note: Rarement utilisé, préférer archiver ou fermer
+   * Note: Rarement utilisé
    */
   async remove(id: string): Promise<{ message: string }> {
     // Vérifier que le feedback existe
@@ -303,11 +382,18 @@ export class FeedbackService {
         where: { id },
       });
 
-      this.logger.warn(`Feedback supprimé: ${id}`);
+      this.logger.warn({
+        event: 'feedback.deleted',
+        feedbackId: id,
+      });
 
       return { message: 'Feedback supprimé avec succès' };
     } catch (error) {
-      this.logger.error(`Erreur suppression feedback: ${error.message}`);
+      this.logger.error({
+        event: 'feedback.delete.error',
+        feedbackId: id,
+        error: error.message,
+      });
       throw error;
     }
   }
@@ -315,7 +401,11 @@ export class FeedbackService {
   /**
    * Statistiques globales
    */
-  async getStats(params: { organizationId?: string; siteId?: string; period?: string }) {
+  async getStats(params: {
+    organizationId?: string;
+    siteId?: string;
+    period?: string;
+  }) {
     const { organizationId, siteId, period = '30d' } = params;
 
     // Calculer la date de début selon la période
@@ -338,14 +428,7 @@ export class FeedbackService {
 
     // Par sentiment
     const bySentiment = await this.prisma.feedback.groupBy({
-      by: ['sentiment'],
-      where,
-      _count: true,
-    });
-
-    // Par statut
-    const byStatus = await this.prisma.feedback.groupBy({
-      by: ['status'],
+      by: ['commentSentiment'],
       where,
       _count: true,
     });
@@ -354,19 +437,16 @@ export class FeedbackService {
     const avgRating = await this.prisma.feedback.aggregate({
       where: {
         ...where,
-        rating: { not: null },
+        overallRating: { not: null },
       },
-      _avg: { rating: true },
+      _avg: { overallRating: true },
     });
 
-    // Temps moyen de réponse
-    const responseTimeResult = await this.prisma.feedback.aggregate({
+    // Taux de réponse
+    const totalWithResponse = await this.prisma.feedback.count({
       where: {
         ...where,
-        respondedAt: { not: null },
-      },
-      _avg: {
-        // TODO: Calculer la différence entre createdAt et respondedAt
+        responseSentAt: { not: null },
       },
     });
 
@@ -374,16 +454,13 @@ export class FeedbackService {
       period,
       total,
       bySentiment: bySentiment.reduce((acc, item) => {
-        acc[item.sentiment] = item._count;
+        acc[item.commentSentiment] = item._count;
         return acc;
       }, {} as Record<string, number>),
-      byStatus: byStatus.reduce((acc, item) => {
-        acc[item.status] = item._count;
-        return acc;
-      }, {} as Record<string, number>),
-      averageRating: avgRating._avg.rating
-        ? Math.round(avgRating._avg.rating * 10) / 10
+      averageRating: avgRating._avg.overallRating
+        ? Math.round(avgRating._avg.overallRating * 10) / 10
         : null,
+      responseRate: total > 0 ? Math.round((totalWithResponse / total) * 100) / 100 : 0,
     };
   }
 
@@ -392,17 +469,24 @@ export class FeedbackService {
   // ===========================
 
   /**
-   * Détection basique du sentiment depuis le message
-   * Note: Version simple, pourrait être améliorée avec IA
+   * Détection du sentiment depuis le commentaire + rating
    */
-  private detectSentiment(message: string, rating?: number): Sentiment {
+  private detectSentiment(comment?: string, rating?: number): Sentiment {
+    // 1. Si rating fourni, priorité au rating
     if (rating) {
-      return this.getSentimentFromRating(rating);
+      if (rating >= 4) return Sentiment.positive;
+      if (rating <= 2) return Sentiment.negative;
+      return Sentiment.neutral;
     }
 
-    const lowerMessage = message.toLowerCase();
+    // 2. Sinon analyse du commentaire
+    if (!comment) {
+      return Sentiment.unknown;
+    }
 
-    // Mots positifs
+    const lowerComment = comment.toLowerCase();
+
+    // Mots positifs (français)
     const positiveWords = [
       'excellent',
       'parfait',
@@ -416,6 +500,9 @@ export class FeedbackService {
       'professionnel',
       'bon',
       'bien',
+      'agréable',
+      'efficace',
+      'formidable',
     ];
 
     // Mots négatifs
@@ -432,10 +519,16 @@ export class FeedbackService {
       'pire',
       'attendre',
       'retard',
+      'médiocre',
+      'insatisfait',
     ];
 
-    const positiveCount = positiveWords.filter((word) => lowerMessage.includes(word)).length;
-    const negativeCount = negativeWords.filter((word) => lowerMessage.includes(word)).length;
+    const positiveCount = positiveWords.filter((word) =>
+      lowerComment.includes(word),
+    ).length;
+    const negativeCount = negativeWords.filter((word) =>
+      lowerComment.includes(word),
+    ).length;
 
     if (positiveCount > negativeCount) {
       return Sentiment.positive;
@@ -447,12 +540,16 @@ export class FeedbackService {
   }
 
   /**
-   * Sentiment depuis la note
+   * Extraction basique de mots-clés
    */
-  private getSentimentFromRating(rating: number): Sentiment {
-    if (rating >= 4) return Sentiment.positive;
-    if (rating <= 2) return Sentiment.negative;
-    return Sentiment.neutral;
+  private extractKeywords(comment: string): string[] {
+    const words = comment
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((word) => word.length > 4); // Mots de plus de 4 lettres
+
+    // Supprimer les doublons
+    return Array.from(new Set(words)).slice(0, 10); // Max 10 mots-clés
   }
 
   /**

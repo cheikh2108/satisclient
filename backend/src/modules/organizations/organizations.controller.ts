@@ -26,12 +26,13 @@ import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationResponseDto } from './dto/organization-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { OrganizationGuard } from '../auth/guards/organization.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Organizations')
 @Controller('organizations')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, OrganizationGuard)
 @ApiBearerAuth('JWT')
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
