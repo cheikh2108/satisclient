@@ -4,6 +4,7 @@
 
 ### Pour bien démarrer
 - **[GETTING_STARTED.md](GETTING_STARTED.md)** - Guide d'installation complet
+- **[API.md](API.md)** - 📡 Documentation API & Swagger (IMPORTANT!)
 
 ### Architecture & Technique  
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Architecture complète du projet
