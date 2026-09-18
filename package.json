@@ -1,0 +1,48 @@
+{
+  "name": "satisclient",
+  "version": "1.0.0",
+  "description": "Plateforme B2B de gestion de satisfaction client, réclamations et redevabilité",
+  "author": "ATAABA Expertise",
+  "license": "PROPRIETARY",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+    "build": "pnpm --filter backend build && pnpm --filter frontend build",
+    "start": "concurrently \"pnpm --filter backend start:prod\" \"pnpm --filter frontend start\"",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "db:migrate": "pnpm --filter backend prisma migrate dev",
+    "db:seed": "pnpm --filter backend prisma db seed",
+    "db:studio": "pnpm --filter backend prisma studio",
+    "test": "pnpm --filter backend test && pnpm --filter frontend test",
+    "lint": "pnpm --filter backend lint && pnpm --filter frontend lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "prettier": "^3.2.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ataaba/satisclient.git"
+  },
+  "keywords": [
+    "satisfaction",
+    "feedback",
+    "complaints",
+    "crm",
+    "b2b",
+    "saas",
+    "multi-tenant"
+  ]
+}

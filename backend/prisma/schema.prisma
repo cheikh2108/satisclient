@@ -1,0 +1,787 @@
+// SatisClient - Prisma Schema
+// PostgreSQL multi-tenant database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum SubscriptionPlan {
+  essentialiel
+  pro
+  business
+  institution
+}
+
+enum OrganizationStatus {
+  active
+  suspended
+  trial
+  expired
+}
+
+enum UserRole {
+  super_admin
+  org_admin
+  director
+  quality_manager
+  service_manager
+  agent
+  client
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+  pending
+}
+
+enum SiteType {
+  organization
+  region
+  agency
+  service
+  point
+}
+
+enum Sentiment {
+  positive
+  neutral
+  negative
+  unknown
+}
+
+enum ComplaintPriority {
+  low
+  normal
+  high
+  urgent
+}
+
+enum ComplaintStatus {
+  received
+  qualified
+  assigned
+  in_progress
+  awaiting_info
+  transferred
+  on_hold
+  resolved
+  closed
+  rejected
+  reopened
+}
+
+enum SuggestionStatus {
+  submitted
+  reviewing
+  approved
+  in_progress
+  implemented
+  rejected
+  archived
+}
+
+enum NotificationChannel {
+  email
+  sms
+  whatsapp
+  in_app
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  delivered
+  failed
+  bounced
+}
+
+// ============================================
+// MODELS
+// ============================================
+
+model Organization {
+  id        String             @id @default(uuid())
+  name      String
+  slug      String             @unique
+  email     String
+  phone     String?
+
+  // Branding
+  logoUrl        String?        @map("logo_url")
+  primaryColor   String         @default("#3B82F6") @map("primary_color")
+  welcomeMessage String?        @map("welcome_message")
+
+  // Subscription
+  subscriptionPlan      SubscriptionPlan      @default(essentialiel) @map("subscription_plan")
+  subscriptionStatus    OrganizationStatus    @default(trial) @map("subscription_status")
+  trialEndsAt           DateTime?             @map("trial_ends_at")
+  subscriptionStartsAt  DateTime?             @map("subscription_starts_at")
+  subscriptionEndsAt    DateTime?             @map("subscription_ends_at")
+
+  // Limits
+  maxSites             Int       @default(1) @map("max_sites")
+  maxUsers             Int       @default(3) @map("max_users")
+  maxMonthlyFeedbacks  Int       @default(1000) @map("max_monthly_feedbacks")
+
+  // Settings (JSONB)
+  settings  Json      @default("{}")
+
+  // Timestamps
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  users         User[]
+  sites         Site[]
+  feedbacks     Feedback[]
+  complaints    Complaint[]
+  suggestions   Suggestion[]
+  surveys       Survey[]
+  surveyResponses SurveyResponse[]
+  notifications Notification[]
+  qrCodes       QrCode[]
+  auditLogs     AuditLog[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String    @id @default(uuid())
+  organizationId String    @map("organization_id")
+
+  // Identity
+  email         String
+  phone         String?
+  passwordHash  String    @map("password_hash")
+
+  // Profile
+  firstName  String    @map("first_name")
+  lastName   String    @map("last_name")
+  avatarUrl  String?   @map("avatar_url")
+
+  // Role & Access
+  role        UserRole     @default(agent)
+  status      UserStatus   @default(active)
+  permissions Json         @default("[]")
+
+  // Site assignments
+  assignedSiteIds String[] @map("assigned_site_ids")
+
+  // Security
+  lastLoginAt       DateTime? @map("last_login_at")
+  lastLoginIp       String?   @map("last_login_ip")
+  emailVerifiedAt   DateTime? @map("email_verified_at")
+  phoneVerifiedAt   DateTime? @map("phone_verified_at")
+  twoFactorEnabled  Boolean   @default(false) @map("two_factor_enabled")
+  twoFactorSecret   String?   @map("two_factor_secret")
+
+  // Preferences
+  preferences Json @default("{}")
+
+  // Timestamps
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  managedSites        Site[]               @relation("SiteManager")
+  feedbacks           Feedback[]           @relation("FeedbackUser")
+  complaintsCreated   Complaint[]          @relation("ComplaintCreator")
+  complaintsAssigned  Complaint[]          @relation("ComplaintAssignee")
+  suggestions         Suggestion[]         @relation("SuggestionUser")
+  surveysCreated      Survey[]             @relation("SurveyCreator")
+  surveyResponses     SurveyResponse[]     @relation("SurveyRespondent")
+  notifications       Notification[]
+  qrCodesCreated      QrCode[]             @relation("QrCodeCreator")
+  auditLogs           AuditLog[]
+  refreshTokens       RefreshToken[]
+  emailVerifications  EmailVerification[]
+  passwordResets      PasswordReset[]
+
+  @@unique([organizationId, email])
+  @@index([organizationId, role])
+  @@index([status])
+  @@map("users")
+}
+
+model Site {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  parentId       String?  @map("parent_id")
+
+  // Identity
+  name String
+  code String?
+  type SiteType
+
+  // Location
+  address   String?
+  city      String?
+  region    String?
+  country   String?  @default("SN")
+  latitude  Decimal? @db.Decimal(10, 8)
+  longitude Decimal? @db.Decimal(11, 8)
+
+  // Contact
+  phone String?
+  email String?
+
+  // QR Code
+  qrCodeUrl        String? @map("qr_code_url")
+  feedbackLinkCode String? @unique @map("feedback_link_code")
+
+  // Manager
+  managerId String? @map("manager_id")
+
+  // Status
+  isActive Boolean @default(true) @map("is_active")
+
+  // Settings
+  settings Json @default("{}")
+
+  // Timestamps
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent          Site?           @relation("SiteHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children        Site[]          @relation("SiteHierarchy")
+  manager         User?           @relation("SiteManager", fields: [managerId], references: [id], onDelete: SetNull)
+  feedbacks       Feedback[]
+  complaints      Complaint[]
+  suggestions     Suggestion[]
+  surveyResponses SurveyResponse[]
+  qrCodes         QrCode[]
+
+  @@index([organizationId])
+  @@index([parentId])
+  @@index([organizationId, type])
+  @@index([feedbackLinkCode])
+  @@map("sites")
+}
+
+model Feedback {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  siteId         String   @map("site_id")
+
+  // Respondent
+  userId           String?  @map("user_id")
+  isAnonymous      Boolean  @default(false) @map("is_anonymous")
+  respondentEmail  String?  @map("respondent_email")
+  respondentPhone  String?  @map("respondent_phone")
+  respondentName   String?  @map("respondent_name")
+
+  // Rating
+  overallRating   Int?     @map("overall_rating")
+  criteriaRatings Json     @default("{}") @map("criteria_ratings")
+
+  // Comment
+  comment          String?  @db.Text
+  commentSentiment Sentiment @default(unknown) @map("comment_sentiment")
+  commentKeywords  String[] @map("comment_keywords")
+
+  // Context
+  serviceDate      DateTime? @map("service_date") @db.Date
+  feedbackChannel  String    @default("web") @map("feedback_channel")
+
+  // Metadata
+  ipAddress  String? @map("ip_address")
+  userAgent  String? @map("user_agent") @db.Text
+
+  // Processing
+  isProcessed      Boolean   @default(false) @map("is_processed")
+  processedAt      DateTime? @map("processed_at")
+  needsResponse    Boolean   @default(false) @map("needs_response")
+  responseSentAt   DateTime? @map("response_sent_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site         Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  user         User?        @relation("FeedbackUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, siteId])
+  @@index([createdAt(sort: Desc)])
+  @@index([overallRating])
+  @@index([commentSentiment])
+  @@index([isProcessed])
+  @@map("feedbacks")
+}
+
+model Survey {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+
+  // Content
+  title       String
+  description String?  @db.Text
+  questions   Json     // Array of question objects
+
+  // Target
+  targetSiteIds String[] @map("target_site_ids")
+
+  // Schedule
+  isActive  Boolean   @default(true) @map("is_active")
+  startDate DateTime? @map("start_date")
+  endDate   DateTime? @map("end_date")
+
+  // Type
+  surveyType String @default("one_time") @map("survey_type")
+
+  // Settings
+  settings Json @default("{}")
+
+  // Stats
+  totalResponses        Int? @default(0) @map("total_responses")
+  avgCompletionTime     Int? @map("avg_completion_time_seconds")
+
+  // Timestamps
+  createdBy String?   @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  creator      User?            @relation("SurveyCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  responses    SurveyResponse[]
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("surveys")
+}
+
+model SurveyResponse {
+  id             String   @id @default(uuid())
+  surveyId       String   @map("survey_id")
+  organizationId String   @map("organization_id")
+  siteId         String?  @map("site_id")
+
+  // Respondent
+  userId           String?  @map("user_id")
+  isAnonymous      Boolean  @default(false) @map("is_anonymous")
+  respondentEmail  String?  @map("respondent_email")
+
+  // Answers
+  answers Json // Object with questionId: answer pairs
+
+  // Metrics
+  completionTimeSeconds Int?     @map("completion_time_seconds")
+  isCompleted           Boolean  @default(true) @map("is_completed")
+
+  // Metadata
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent") @db.Text
+
+  // Timestamps
+  submittedAt DateTime @default(now()) @map("submitted_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  survey       Survey       @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site         Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  user         User?        @relation("SurveyRespondent", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([surveyId])
+  @@index([organizationId])
+  @@index([submittedAt(sort: Desc)])
+  @@map("survey_responses")
+}
+
+model Complaint {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  siteId         String   @map("site_id")
+
+  // Tracking
+  ticketNumber String @unique @map("ticket_number")
+
+  // Content
+  title        String
+  description  String        @db.Text
+  category     String?
+  subcategory  String?
+
+  // Priority & Status
+  priority ComplaintPriority @default(normal)
+  status   ComplaintStatus   @default(received)
+
+  // Dates
+  incidentDate     DateTime?  @map("incident_date") @db.Date
+  slaDueDate       DateTime?  @map("sla_due_date")
+  firstResponseAt  DateTime?  @map("first_response_at")
+  resolvedAt       DateTime?  @map("resolved_at")
+  closedAt         DateTime?  @map("closed_at")
+
+  // Complainant
+  complainantUserId String?  @map("complainant_user_id")
+  isAnonymous       Boolean  @default(false) @map("is_anonymous")
+  complainantName   String?  @map("complainant_name")
+  complainantEmail  String?  @map("complainant_email")
+  complainantPhone  String?  @map("complainant_phone")
+
+  // Assignment
+  assignedTo   String?   @map("assigned_to")
+  assignedAt   DateTime? @map("assigned_at")
+  assignedBy   String?   @map("assigned_by")
+
+  // Resolution
+  resolutionSummary  String? @db.Text @map("resolution_summary")
+  resolutionCategory String? @map("resolution_category")
+
+  // Satisfaction after resolution
+  resolutionRating  Int?    @map("resolution_rating")
+  resolutionComment String? @db.Text @map("resolution_comment")
+
+  // Attachments
+  attachments Json @default("[]")
+
+  // Flags
+  isEscalated Boolean   @default(false) @map("is_escalated")
+  escalatedAt DateTime? @map("escalated_at")
+  escalatedTo String?   @map("escalated_to")
+  isOverdue   Boolean   @default(false) @map("is_overdue")
+  isCritical  Boolean   @default(false) @map("is_critical")
+
+  // Related
+  relatedComplaintIds String[] @map("related_complaint_ids")
+  relatedFeedbackId   String?  @map("related_feedback_id")
+
+  // Metadata
+  source    String  @default("web")
+  ipAddress String? @map("ip_address")
+
+  // Timestamps
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site           Site               @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  creator        User?              @relation("ComplaintCreator", fields: [complainantUserId], references: [id], onDelete: SetNull)
+  assignee       User?              @relation("ComplaintAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  history        ComplaintHistory[]
+
+  @@index([organizationId])
+  @@index([siteId])
+  @@index([ticketNumber])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([priority])
+  @@index([isOverdue])
+  @@index([slaDueDate])
+  @@index([createdAt(sort: Desc)])
+  @@map("complaints")
+}
+
+model ComplaintHistory {
+  id             String   @id @default(uuid())
+  complaintId    String   @map("complaint_id")
+  organizationId String   @map("organization_id")
+
+  // Action
+  action String
+
+  // Changes
+  oldStatus      ComplaintStatus? @map("old_status")
+  newStatus      ComplaintStatus? @map("new_status")
+  oldAssignedTo  String?          @map("old_assigned_to")
+  newAssignedTo  String?          @map("new_assigned_to")
+
+  // Comment
+  comment      String?  @db.Text
+  internalNote Boolean  @default(false) @map("internal_note")
+
+  // Actor
+  userId   String? @map("user_id")
+  userName String? @map("user_name")
+
+  // Metadata
+  metadata  Json    @default("{}")
+  ipAddress String? @map("ip_address")
+
+  // Timestamp
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  complaint    Complaint    @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([complaintId, createdAt(sort: Desc)])
+  @@index([userId])
+  @@map("complaint_history")
+}
+
+model Suggestion {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  siteId         String   @map("site_id")
+
+  // Content
+  title           String
+  description     String  @db.Text
+  category        String?
+  expectedImpact  String? @db.Text @map("expected_impact")
+
+  // Status
+  status SuggestionStatus @default(submitted)
+
+  // Submitter
+  submittedBy    String?  @map("submitted_by")
+  submitterName  String?  @map("submitter_name")
+  submitterEmail String?  @map("submitter_email")
+  isAnonymous    Boolean  @default(false) @map("is_anonymous")
+
+  // Assignment
+  assignedTo String?   @map("assigned_to")
+  assignedAt DateTime? @map("assigned_at")
+
+  // Implementation
+  implementationNotes     String?   @db.Text @map("implementation_notes")
+  implementedAt           DateTime? @map("implemented_at")
+  implementationProofUrls String[]  @map("implementation_proof_urls")
+
+  // Feedback
+  feedbackRequested Boolean @default(false) @map("feedback_requested")
+  feedbackProvided  Boolean @default(false) @map("feedback_provided")
+
+  // Votes (future)
+  upvotes   Int @default(0)
+  downvotes Int @default(0)
+
+  // Timestamps
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site         Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  submitter    User?        @relation("SuggestionUser", fields: [submittedBy], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([siteId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("suggestions")
+}
+
+model Notification {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+
+  // Recipient
+  userId          String? @map("user_id")
+  recipientEmail  String? @map("recipient_email")
+  recipientPhone  String? @map("recipient_phone")
+
+  // Type & Channel
+  notificationType String              @map("notification_type")
+  channel          NotificationChannel
+  status           NotificationStatus  @default(pending)
+
+  // Content
+  subject    String?
+  body       String  @db.Text
+  templateId String? @map("template_id")
+
+  // Context
+  relatedEntityType String? @map("related_entity_type")
+  relatedEntityId   String? @map("related_entity_id")
+
+  // Delivery
+  scheduledFor DateTime  @default(now()) @map("scheduled_for")
+  sentAt       DateTime? @map("sent_at")
+  deliveredAt  DateTime? @map("delivered_at")
+  readAt       DateTime? @map("read_at")
+  errorMessage String?   @db.Text @map("error_message")
+  retryCount   Int       @default(0) @map("retry_count")
+
+  // External
+  externalId String? @map("external_id")
+
+  // Timestamp
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([organizationId, notificationType])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model QrCode {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  siteId         String?  @map("site_id")
+
+  // Code
+  code       String  @unique
+  qrImageUrl String? @map("qr_image_url")
+
+  // Target
+  targetType String  @map("target_type")
+  targetId   String? @map("target_id")
+
+  // URL
+  destinationUrl String @map("destination_url")
+
+  // Stats
+  scanCount     Int       @default(0) @map("scan_count")
+  lastScannedAt DateTime? @map("last_scanned_at")
+
+  // Settings
+  isActive  Boolean   @default(true) @map("is_active")
+  expiresAt DateTime? @map("expires_at")
+
+  // Customization
+  customMessage String? @db.Text @map("custom_message")
+
+  // Timestamps
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site         Site?        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  creator      User?        @relation("QrCodeCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([siteId])
+  @@index([code])
+  @@map("qr_codes")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String?  @map("organization_id")
+
+  // Actor
+  userId    String?   @map("user_id")
+  userEmail String?   @map("user_email")
+  userRole  UserRole? @map("user_role")
+
+  // Action
+  action     String  @map("action")
+  entityType String  @map("entity_type")
+  entityId   String? @map("entity_id")
+
+  // Changes
+  changes Json?
+
+  // Request metadata
+  ipAddress     String? @map("ip_address")
+  userAgent     String? @db.Text @map("user_agent")
+  requestMethod String? @map("request_method")
+  requestPath   String? @map("request_path")
+
+  // Result
+  success      Boolean @default(true)
+  errorMessage String? @db.Text @map("error_message")
+
+  // Timestamp
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+// Refresh Tokens for secure session management
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique @db.Text
+  expiresAt DateTime @map("expires_at")
+  isRevoked Boolean  @default(false) @map("is_revoked")
+
+  // Device tracking
+  deviceId    String? @map("device_id")
+  deviceName  String? @map("device_name")
+  ipAddress   String  @map("ip_address")
+  userAgent   String  @map("user_agent") @db.Text
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  lastUsedAt DateTime @default(now()) @map("last_used_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([userId, isRevoked])
+  @@map("refresh_tokens")
+}
+
+// Email verification tokens
+model EmailVerification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("email_verifications")
+}
+
+// Password reset tokens
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  isUsed    Boolean  @default(false) @map("is_used")
+  usedAt    DateTime? @map("used_at")
+
+  ipAddress String? @map("ip_address")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("password_resets")
+}
