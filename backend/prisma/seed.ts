@@ -1,5 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, ComplaintStatus, ComplaintPriority } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 const prisma = new PrismaClient();
 
@@ -18,14 +21,20 @@ async function main() {
       slug: 'demo-clinique-espoir',
       email: 'contact@cliniqueespoir.demo',
       phone: '+221771234567',
-      logoUrl: null,
-      primaryColor: '#3B82F6',
-      welcomeMessage: 'Bienvenue à la Clinique Espoir. Votre santé, notre priorité.',
-      subscriptionPlan: 'pro',
-      subscriptionStatus: 'active',
-      maxSites: 5,
-      maxUsers: 10,
-      maxMonthlyFeedbacks: 5000,
+      logo: null,
+      address: 'Avenue Cheikh Anta Diop, Dakar',
+      website: 'https://cliniqueespoir.demo',
+      industry: 'Santé',
+      size: '50-200',
+      subscriptionTier: 'PRO',
+      subscriptionStart: new Date(),
+      subscriptionEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      isActive: true,
+      settings: {
+        timezone: 'Africa/Dakar',
+        language: 'fr',
+        slaHours: 48,
+      },
     },
   });
 
@@ -38,124 +47,90 @@ async function main() {
   const passwordHash = await bcrypt.hash('Demo123!Pass', 12);
 
   const adminUser = await prisma.user.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000001' },
+    where: { email: 'admin@demo.satisclient.sn' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000001',
       organizationId: demoOrg.id,
       email: 'admin@demo.satisclient.sn',
       passwordHash,
       firstName: 'Admin',
       lastName: 'Demo',
       phone: '+221771234567',
-      role: 'org_admin',
-      status: 'active',
-      emailVerifiedAt: new Date(),
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+      emailVerified: true,
     },
   });
 
-  const qualityManager = await prisma.user.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000002' },
+  const manager = await prisma.user.upsert({
+    where: { email: 'qualite@demo.satisclient.sn' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000002',
       organizationId: demoOrg.id,
       email: 'qualite@demo.satisclient.sn',
       passwordHash,
       firstName: 'Aminata',
       lastName: 'Diallo',
       phone: '+221771234568',
-      role: 'quality_manager',
-      status: 'active',
-      emailVerifiedAt: new Date(),
+      role: UserRole.MANAGER,
+      status: UserStatus.ACTIVE,
+      emailVerified: true,
     },
   });
 
   const agent = await prisma.user.upsert({
-    where: { id: '00000000-0000-0000-0000-000000000003' },
+    where: { email: 'agent@demo.satisclient.sn' },
     update: {},
     create: {
-      id: '00000000-0000-0000-0000-000000000003',
       organizationId: demoOrg.id,
       email: 'agent@demo.satisclient.sn',
       passwordHash,
       firstName: 'Moussa',
       lastName: 'Sow',
       phone: '+221771234569',
-      role: 'agent',
-      status: 'active',
-      emailVerifiedAt: new Date(),
+      role: UserRole.AGENT,
+      status: UserStatus.ACTIVE,
+      emailVerified: true,
     },
   });
 
-  console.log('✅ Users created:', [adminUser, qualityManager, agent].map((u) => u.email).join(', '));
+  console.log('✅ Users created:', [adminUser, manager, agent].map((u) => u.email).join(', '));
 
   // ============================================
-  // 3. SITES (HIÉRARCHIE)
+  // 3. CLIENTS
   // ============================================
 
-  const mainSite = await prisma.site.create({
+  const customer1 = await prisma.customer.create({
     data: {
       organizationId: demoOrg.id,
-      name: 'Siège Principal',
-      code: 'HQ-DKR',
-      type: 'organization',
-      address: 'Avenue Cheikh Anta Diop, Dakar',
-      city: 'Dakar',
-      region: 'Dakar',
-      country: 'SN',
-      phone: '+221338234567',
-      email: 'siege@cliniqueespoir.demo',
-      isActive: true,
-      managerId: adminUser.id,
-      feedbackLinkCode: 'clinique-espoir-hq',
+      email: 'fatou@example.com',
+      phone: '+221771234570',
+      firstName: 'Fatou',
+      lastName: 'Ndiaye',
+      isAnonymous: false,
     },
   });
 
-  const plateauAgency = await prisma.site.create({
+  const customer2 = await prisma.customer.create({
     data: {
       organizationId: demoOrg.id,
-      parentId: mainSite.id,
-      name: 'Agence Plateau',
-      code: 'AG-PLT',
-      type: 'agency',
-      address: 'Place de l\'Indépendance, Plateau',
-      city: 'Dakar',
-      region: 'Dakar',
-      country: 'SN',
-      phone: '+221338234568',
-      isActive: true,
-      managerId: qualityManager.id,
-      feedbackLinkCode: 'clinique-plateau',
+      email: 'ibrahima@example.com',
+      phone: '+221771234571',
+      firstName: 'Ibrahima',
+      lastName: 'Fall',
+      isAnonymous: false,
     },
   });
 
-  const pediatrieService = await prisma.site.create({
+  const customer3 = await prisma.customer.create({
     data: {
       organizationId: demoOrg.id,
-      parentId: plateauAgency.id,
-      name: 'Service Pédiatrie',
-      code: 'SRV-PED',
-      type: 'service',
-      isActive: true,
-      managerId: agent.id,
-      feedbackLinkCode: 'pediatrie',
+      phone: '+221771234572',
+      isAnonymous: true,
     },
   });
 
-  const cardiologieService = await prisma.site.create({
-    data: {
-      organizationId: demoOrg.id,
-      parentId: plateauAgency.id,
-      name: 'Service Cardiologie',
-      code: 'SRV-CAR',
-      type: 'service',
-      isActive: true,
-      feedbackLinkCode: 'cardiologie',
-    },
-  });
-
-  console.log('✅ Sites created:', [mainSite, plateauAgency, pediatrieService, cardiologieService].length);
+  console.log('✅ Customers created:', 3);
 
   // ============================================
   // 4. FEEDBACKS DE DEMO
@@ -165,53 +140,27 @@ async function main() {
     data: [
       {
         organizationId: demoOrg.id,
-        siteId: pediatrieService.id,
-        overallRating: 5,
-        criteriaRatings: {
-          accueil: 5,
-          qualite: 5,
-          delai: 4,
-          proprete: 5,
-        },
-        comment: 'Excellent service ! Le personnel est très attentionné avec les enfants.',
-        commentSentiment: 'positive',
-        respondentName: 'Fatou Ndiaye',
-        respondentEmail: 'fatou@example.com',
-        feedbackChannel: 'qr_code',
-        isAnonymous: false,
+        customerId: customer1.id,
+        rating: 5,
+        comment: 'Excellent service ! Le personnel est très attentionné.',
+        category: 'Service client',
+        sentiment: 'positive',
       },
       {
         organizationId: demoOrg.id,
-        siteId: pediatrieService.id,
-        overallRating: 3,
-        criteriaRatings: {
-          accueil: 4,
-          qualite: 4,
-          delai: 2,
-          proprete: 3,
-        },
+        customerId: customer2.id,
+        rating: 3,
         comment: 'Bonne prise en charge mais temps d\'attente un peu long.',
-        commentSentiment: 'neutral',
-        respondentName: 'Ibrahima Fall',
-        respondentEmail: 'ibrahima@example.com',
-        feedbackChannel: 'web',
-        isAnonymous: false,
+        category: 'Délai',
+        sentiment: 'neutral',
       },
       {
         organizationId: demoOrg.id,
-        siteId: cardiologieService.id,
-        overallRating: 4,
-        criteriaRatings: {
-          accueil: 4,
-          qualite: 5,
-          delai: 3,
-          proprete: 4,
-        },
-        comment: 'Très satisfait de la consultation. Médecin compétent et à l\'écoute.',
-        commentSentiment: 'positive',
-        respondentName: 'Awa Seck',
-        feedbackChannel: 'web',
-        isAnonymous: false,
+        customerId: customer3.id,
+        rating: 4,
+        comment: 'Très satisfait dans l\'ensemble.',
+        category: 'Qualité',
+        sentiment: 'positive',
       },
     ],
   });
@@ -225,83 +174,41 @@ async function main() {
   const complaint1 = await prisma.complaint.create({
     data: {
       organizationId: demoOrg.id,
-      siteId: pediatrieService.id,
-      ticketNumber: 'SAT-2026-000001',
+      customerId: customer1.id,
+      reference: 'SAT-2026-000001',
       title: 'Temps d\'attente excessif',
       description: 'Nous avons attendu plus de 2 heures avant la consultation malgré notre rendez-vous.',
       category: 'Délai',
-      priority: 'normal',
-      status: 'received',
-      complainantName: 'Mame Diarra',
-      complainantEmail: 'mdiarra@example.com',
-      complainantPhone: '+221771234570',
-      isAnonymous: false,
-      source: 'web',
-      slaDueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // +5 jours
+      priority: ComplaintPriority.MEDIUM,
+      status: ComplaintStatus.IN_PROGRESS,
+      assignedTo: agent.id,
+      slaDeadline: new Date(Date.now() + 48 * 60 * 60 * 1000),
     },
   });
 
   const complaint2 = await prisma.complaint.create({
     data: {
       organizationId: demoOrg.id,
-      siteId: cardiologieService.id,
-      ticketNumber: 'SAT-2026-000002',
+      customerId: customer2.id,
+      reference: 'SAT-2026-000002',
       title: 'Problème de facturation',
       description: 'Montant facturé différent de celui annoncé lors de la prise de rendez-vous.',
       category: 'Facturation',
-      priority: 'high',
-      status: 'qualified',
-      complainantName: 'Ousmane Ba',
-      complainantEmail: 'oба@example.com',
-      isAnonymous: false,
-      source: 'email',
+      priority: ComplaintPriority.HIGH,
+      status: ComplaintStatus.ASSIGNED,
       assignedTo: agent.id,
-      assignedAt: new Date(),
-      slaDueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // +2 jours
+      slaDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
     },
   });
 
   console.log('✅ Complaints created:', [complaint1, complaint2].length);
 
-  // ============================================
-  // 6. SUGGESTIONS DE DEMO
-  // ============================================
-
-  const suggestions = await prisma.suggestion.createMany({
-    data: [
-      {
-        organizationId: demoOrg.id,
-        siteId: plateauAgency.id,
-        title: 'Système de prise de rendez-vous en ligne',
-        description: 'Il serait pratique d\'avoir un système de réservation en ligne pour éviter les déplacements inutiles.',
-        category: 'Amélioration digitale',
-        status: 'submitted',
-        submitterName: 'Aminata Touré',
-        submitterEmail: 'atoure@example.com',
-        isAnonymous: false,
-      },
-      {
-        organizationId: demoOrg.id,
-        siteId: pediatrieService.id,
-        title: 'Espace jeux pour enfants',
-        description: 'Un coin jeux dans la salle d\'attente aiderait à distraire les enfants pendant l\'attente.',
-        category: 'Confort',
-        status: 'approved',
-        submitterName: 'Khady Diop',
-        isAnonymous: false,
-        assignedTo: qualityManager.id,
-        assignedAt: new Date(),
-      },
-    ],
-  });
-
-  console.log('✅ Suggestions created:', suggestions.count);
-
   console.log('\n🎉 Seed completed successfully!\n');
   console.log('📝 Credentials de test:');
-  console.log('   Admin:           admin@demo.satisclient.sn / Demo123!Pass');
-  console.log('   Quality Manager: qualite@demo.satisclient.sn / Demo123!Pass');
-  console.log('   Agent:           agent@demo.satisclient.sn / Demo123!Pass');
+  console.log('   Admin:   admin@demo.satisclient.sn / Demo123!Pass');
+  console.log('   Manager: qualite@demo.satisclient.sn / Demo123!Pass');
+  console.log('   Agent:   agent@demo.satisclient.sn / Demo123!Pass');
+  console.log('\n📊 Prisma Studio: http://localhost:5555');
   console.log('\n');
 }
 

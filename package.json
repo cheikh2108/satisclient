@@ -5,23 +5,18 @@
   "author": "ATAABA Expertise",
   "license": "PROPRIETARY",
   "private": true,
-  "workspaces": [
-    "backend",
-    "frontend",
-    "shared"
-  ],
   "scripts": {
-    "dev": "concurrently \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
-    "build": "pnpm --filter backend build && pnpm --filter frontend build",
-    "start": "concurrently \"pnpm --filter backend start:prod\" \"pnpm --filter frontend start\"",
+    "dev": "concurrently \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "start": "concurrently \"npm --prefix backend run start:prod\" \"npm --prefix frontend run start\"",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
-    "db:migrate": "pnpm --filter backend prisma migrate dev",
-    "db:seed": "pnpm --filter backend prisma db seed",
-    "db:studio": "pnpm --filter backend prisma studio",
-    "test": "pnpm --filter backend test && pnpm --filter frontend test",
-    "lint": "pnpm --filter backend lint && pnpm --filter frontend lint",
+    "db:migrate": "npm --prefix backend run prisma:migrate",
+    "db:seed": "npm --prefix backend run prisma:seed",
+    "db:studio": "npm --prefix backend run prisma:studio",
+    "test": "npm --prefix backend run test && npm --prefix frontend run test",
+    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
   "devDependencies": {
@@ -30,7 +25,7 @@
   },
   "engines": {
     "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "npm": ">=9.0.0"
   },
   "repository": {
     "type": "git",

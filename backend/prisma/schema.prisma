@@ -143,16 +143,17 @@ model Organization {
   deletedAt DateTime? @map("deleted_at")
 
   // Relations
-  users         User[]
-  sites         Site[]
-  feedbacks     Feedback[]
-  complaints    Complaint[]
-  suggestions   Suggestion[]
-  surveys       Survey[]
-  surveyResponses SurveyResponse[]
-  notifications Notification[]
-  qrCodes       QrCode[]
-  auditLogs     AuditLog[]
+  users              User[]
+  sites              Site[]
+  feedbacks          Feedback[]
+  complaints         Complaint[]
+  complaintHistory   ComplaintHistory[]
+  suggestions        Suggestion[]
+  surveys            Survey[]
+  surveyResponses    SurveyResponse[]
+  notifications      Notification[]
+  qrCodes            QrCode[]
+  auditLogs          AuditLog[]
 
   @@map("organizations")
 }
@@ -201,6 +202,7 @@ model User {
   feedbacks           Feedback[]           @relation("FeedbackUser")
   complaintsCreated   Complaint[]          @relation("ComplaintCreator")
   complaintsAssigned  Complaint[]          @relation("ComplaintAssignee")
+  complaintHistory    ComplaintHistory[]
   suggestions         Suggestion[]         @relation("SuggestionUser")
   surveysCreated      Survey[]             @relation("SurveyCreator")
   surveyResponses     SurveyResponse[]     @relation("SurveyRespondent")

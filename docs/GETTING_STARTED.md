@@ -5,15 +5,10 @@
 Avant de commencer, assurez-vous d'avoir installé :
 
 - **Node.js** 18+ ([télécharger](https://nodejs.org/))
-- **pnpm** 8+ (recommandé) ou npm/yarn
-- **Docker** et **Docker Compose** (pour PostgreSQL et Redis)
+- **npm** 9+ (inclus avec Node.js)
+- **PostgreSQL** 14+ natif Windows ([télécharger](https://www.postgresql.org/download/windows/))
+- **Redis** (optionnel, pour la production)
 - **Git**
-
-### Installation de pnpm
-
-```bash
-npm install -g pnpm
-```
 
 ## Installation
 
@@ -28,56 +23,50 @@ cd satisclient
 
 ```bash
 # À la racine du projet
-pnpm install
+npm install
+
+# Cela installera automatiquement :
+# - Les dépendances root (concurrently, prettier)
+# - Les dépendances backend (NestJS, Prisma, etc.)
+# - Les dépendances frontend (Next.js, React, etc.)
 ```
 
-Cela installera automatiquement les dépendances pour :
-- Le projet root
-- Le backend (NestJS)
-- Le frontend (Next.js)
+### 3. Configurer PostgreSQL
 
-### 3. Démarrer les services Docker
+Assurez-vous que PostgreSQL est installé et en cours d'exécution.
 
 ```bash
-# Démarrer PostgreSQL + Redis + pgAdmin + Redis Commander
-docker-compose up -d
+# Créer l'utilisateur et la base de données
+# Ouvrir pgAdmin ou psql et exécuter :
 
-# Vérifier que les services sont lancés
-docker-compose ps
+CREATE USER satisclient WITH PASSWORD 'satisclient_password';
+CREATE DATABASE satisclient_dev OWNER satisclient;
+GRANT ALL PRIVILEGES ON DATABASE satisclient_dev TO satisclient;
 ```
-
-Services disponibles :
-- **PostgreSQL** : `localhost:5432`
-- **Redis** : `localhost:6379`
-- **pgAdmin** : http://localhost:5050 (admin@satisclient.local / admin)
-- **Redis Commander** : http://localhost:8081
 
 ### 4. Configurer les variables d'environnement
 
-```bash
-# Copier le fichier d'exemple
-cp .env.example .env
+Le fichier `backend/.env` existe déjà avec les bonnes valeurs :
 
-# Éditer .env avec vos valeurs (les valeurs par défaut fonctionnent pour le dev local)
-```
-
-**Variables minimales requises :**
 ```env
 NODE_ENV=development
-DATABASE_URL="postgresql://satisclient:satisclient_password@localhost:5432/satisclient_dev?schema=public"
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+DATABASE_URL=postgresql://satisclient:satisclient_password@localhost:5432/satisclient_dev?schema=public
+JWT_SECRET=<généré automatiquement>
+ENCRYPTION_KEY=<généré automatiquement>
 BACKEND_PORT=3001
 NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
+
+**Note :** Les clés JWT et ENCRYPTION_KEY ont été générées automatiquement.
 
 ### 5. Initialiser la base de données
 
 ```bash
 # Générer le client Prisma
 cd backend
-pnpm prisma generate
+npx prisma generate
 
-# Créer les tables (migration)
+# Les tables ont déjà été créées via SQL
 pnpm prisma migrate dev --name init
 
 # (Optionnel) Seed avec des données de test
@@ -90,7 +79,7 @@ pnpm prisma db seed
 
 ```bash
 # À la racine
-pnpm dev
+npm run dev
 ```
 
 Cela démarre :
@@ -102,11 +91,11 @@ Cela démarre :
 ```bash
 # Terminal 1 - Backend
 cd backend
-pnpm dev
+npm run dev
 
 # Terminal 2 - Frontend
 cd frontend
-pnpm dev
+npm run dev
 ```
 
 ## Accès à l'application
@@ -114,13 +103,12 @@ pnpm dev
 - **Frontend** : http://localhost:3000
 - **Backend API** : http://localhost:3001/api
 - **API Documentation (Swagger)** : http://localhost:3001/api/docs
-- **pgAdmin** : http://localhost:5050
 
-## Compte de test (après seed)
+## Compte de test
 
 ```
 Email: admin@demo.satisclient.sn
-Mot de passe: Demo123!
+Mot de passe: Demo123!Pass
 ```
 
 ## Commandes utiles
@@ -131,19 +119,19 @@ Mot de passe: Demo123!
 cd backend
 
 # Créer une nouvelle migration
-pnpm prisma migrate dev --name nom_migration
+npx prisma migrate dev --name nom_migration
 
 # Appliquer les migrations
-pnpm prisma migrate deploy
+npx prisma migrate deploy
 
 # Ouvrir Prisma Studio (interface graphique)
-pnpm prisma studio
+npx prisma studio
 
 # Reset database (⚠️ supprime toutes les données)
-pnpm prisma migrate reset
+npx prisma migrate reset
 
-# Seed database
-pnpm prisma db seed
+# Régénérer le client Prisma
+npx prisma generate
 ```
 
 ### Backend
@@ -152,21 +140,21 @@ pnpm prisma db seed
 cd backend
 
 # Développement avec hot-reload
-pnpm dev
+npm run dev
 
 # Build production
-pnpm build
+npm run build
 
 # Démarrer en production
-pnpm start:prod
+npm run start:prod
 
 # Tests
-pnpm test
-pnpm test:e2e
-pnpm test:cov
+npm test
+npm run test:e2e
+npm run test:cov
 
 # Lint
-pnpm lint
+npm run lint
 ```
 
 ### Frontend
@@ -175,41 +163,36 @@ pnpm lint
 cd frontend
 
 # Développement
-pnpm dev
+npm run dev
 
 # Build production
-pnpm build
+npm run build
 
 # Démarrer production
-pnpm start
+npm start
 
 # Lint
-pnpm lint
+npm run lint
 
 # Type check
-pnpm type-check
+npm run type-check
 ```
 
-### Docker
+### PostgreSQL (natif Windows)
 
 ```bash
-# Démarrer les services
-docker-compose up -d
+# Vérifier le statut du service PostgreSQL
+# Via Services Windows ou :
+sc query postgresql-x64-<version>
 
-# Voir les logs
-docker-compose logs -f
+# Se connecter à PostgreSQL
+psql -U postgres
 
-# Voir les logs d'un service spécifique
-docker-compose logs -f postgres
+# Lister les bases de données
+psql -U postgres -l
 
-# Arrêter les services
-docker-compose down
-
-# Arrêter et supprimer les volumes (⚠️ supprime les données)
-docker-compose down -v
-
-# Redémarrer un service
-docker-compose restart postgres
+# Se connecter à satisclient_dev
+psql -U satisclient -d satisclient_dev
 ```
 
 ## Structure du projet
@@ -220,19 +203,20 @@ satisclient/
 │   ├── src/
 │   │   ├── modules/        # Modules fonctionnels
 │   │   ├── prisma/         # Prisma ORM
+│   │   ├── common/         # Services communs (sécurité)
 │   │   └── main.ts         # Point d'entrée
-│   └── prisma/
-│       └── schema.prisma   # Schéma de données
+│   ├── prisma/
+│   │   ├── schema.prisma   # Schéma de données
+│   │   └── seed.ts         # Données de test
+│   └── .env                # Variables d'environnement backend
 ├── frontend/                # Application Next.js
 │   ├── src/
 │   │   ├── app/           # App Router (pages)
 │   │   ├── components/    # Composants React
 │   │   └── lib/           # Utilitaires
 │   └── public/            # Fichiers statiques
-├── shared/                  # Types partagés
-├── docker-compose.yml       # Services Docker
-├── .env.example            # Variables d'environnement
-└── package.json            # Workspace root
+├── docs/                    # Documentation
+└── package.json            # Configuration npm root
 ```
 
 ## Résolution de problèmes
@@ -240,23 +224,25 @@ satisclient/
 ### Erreur de connexion à PostgreSQL
 
 ```bash
-# Vérifier que Docker est lancé
-docker-compose ps
+# Vérifier que PostgreSQL est lancé (Windows Services)
+sc query postgresql-x64-18
 
-# Redémarrer PostgreSQL
-docker-compose restart postgres
+# Vérifier la connexion
+psql -U satisclient -d satisclient_dev
 
-# Vérifier les logs
-docker-compose logs postgres
+# Si erreur d'authentification, vérifier DATABASE_URL dans backend/.env
 ```
 
 ### Port déjà utilisé
 
 ```bash
-# Voir quel processus utilise le port 3001
-lsof -i :3001
+# Voir quel processus utilise le port 3001 (Windows)
+netstat -ano | findstr :3001
 
-# Changer le port dans .env
+# Tuer le processus
+taskkill /PID <PID> /F
+
+# Ou changer le port dans backend/.env
 BACKEND_PORT=3002
 ```
 
@@ -264,7 +250,7 @@ BACKEND_PORT=3002
 
 ```bash
 cd backend
-pnpm prisma generate
+npx prisma generate
 ```
 
 ### Erreur lors de l'installation des dépendances
@@ -272,16 +258,21 @@ pnpm prisma generate
 ```bash
 # Nettoyer et réinstaller
 rm -rf node_modules backend/node_modules frontend/node_modules
-rm pnpm-lock.yaml
-pnpm install
+rm package-lock.json backend/package-lock.json frontend/package-lock.json
+npm install
 ```
 
-### Base de données corrompue
+### Base de données à réinitialiser
 
 ```bash
+# Option 1 : Via psql
+psql -U postgres
+DROP DATABASE satisclient_dev;
+CREATE DATABASE satisclient_dev OWNER satisclient;
+
+# Option 2 : Via Prisma
 cd backend
-pnpm prisma migrate reset
-pnpm prisma db seed
+npx prisma migrate reset
 ```
 
 ## Prochaines étapes

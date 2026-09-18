@@ -145,11 +145,15 @@ pnpm run dev
 
 ## 📚 Documentation
 
-- [Architecture complète](ARCHITECTURE.md)
-- [Schéma de base de données](DATABASE_SCHEMA.md)
+**👉 Toute la documentation est dans [docs/](docs/README.md)**
+
+- [Installation & Setup](docs/GETTING_STARTED.md)
+- [Architecture technique](docs/ARCHITECTURE.md)
+- [Base de données](docs/DATABASE_SCHEMA.md)
+- [Sécurité](docs/SECURITY.md)
+- [Déploiement Dokploy](docs/DEPLOYMENT.md)
+- [État du projet](docs/STATUS.md)
 - [Cahier des charges](SatisClient_Cahier_des_charges_et_offre_commerciale.md)
-- [Guide API](docs/api/README.md) *(À venir)*
-- [Guide déploiement](docs/deployment/README.md) *(À venir)*
 
 ## 🎯 Roadmap
 
