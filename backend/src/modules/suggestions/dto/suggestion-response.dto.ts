@@ -107,14 +107,6 @@ export class SuggestionResponseDto {
     lastName: string;
   };
 
-  @ApiPropertyOptional()
-  @Expose()
-  assignee?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-  };
-
   constructor(partial: Partial<SuggestionResponseDto>) {
     Object.assign(this, partial);
     // Calculer le score

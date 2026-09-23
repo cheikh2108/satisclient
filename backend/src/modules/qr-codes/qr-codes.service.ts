@@ -272,6 +272,10 @@ export class QrCodesService {
       qrCode.site.id,
     );
 
+    if (!qrCode.site || !qrCode.site.code) {
+      throw new BadRequestException('Site invalide');
+    }
+
     const newUrl = this.generateFeedbackUrl(qrCode.site.code, newCode);
 
     const newQrCodeImage = await this.generateQrCodeImage(newUrl);
@@ -280,11 +284,10 @@ export class QrCodesService {
       where: { id },
       data: {
         code: newCode,
-        url: newUrl,
-        qrCodeImage: newQrCodeImage,
+        destinationUrl: newUrl,
+        qrImageUrl: newQrCodeImage,
         scanCount: 0,
         lastScannedAt: null,
-        updatedAt: new Date(),
       },
       include: {
         site: {
@@ -409,6 +412,10 @@ export class QrCodesService {
       where: { id: siteId },
       select: { code: true },
     });
+
+    if (!site || !site.code) {
+      throw new BadRequestException('Site ou code site invalide');
+    }
 
     const sitePrefix = site.code.substring(0, 3).toUpperCase();
 

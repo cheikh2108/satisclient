@@ -139,13 +139,6 @@ export class SuggestionsService {
             lastName: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
     });
 
@@ -166,13 +159,6 @@ export class SuggestionsService {
           },
         },
         submitter: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        assignee: {
           select: {
             id: true,
             firstName: true,
@@ -227,13 +213,6 @@ export class SuggestionsService {
             lastName: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
     });
 
@@ -282,13 +261,6 @@ export class SuggestionsService {
             lastName: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
     });
 
@@ -328,13 +300,6 @@ export class SuggestionsService {
             lastName: true,
           },
         },
-        assignee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
       },
     });
 
@@ -362,7 +327,7 @@ export class SuggestionsService {
       throw new BadRequestException('Suggestion déjà implémentée');
     }
 
-    if (![SuggestionStatus.approved, SuggestionStatus.in_progress].includes(suggestion.status)) {
+    if (suggestion.status !== SuggestionStatus.approved && suggestion.status !== SuggestionStatus.in_progress) {
       throw new BadRequestException(
         'La suggestion doit être approuvée ou en cours pour être implémentée',
       );
@@ -384,13 +349,6 @@ export class SuggestionsService {
           },
         },
         submitter: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        assignee: {
           select: {
             id: true,
             firstName: true,
