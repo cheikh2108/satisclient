@@ -33,3 +33,27 @@ export function formatCurrency(amount: number, currency: string = 'XOF'): string
     currency,
   }).format(amount);
 }
+
+/**
+ * Format percentage
+ */
+export function formatPercent(value: number, decimals = 1): string {
+  return `${value.toFixed(decimals)}%`;
+}
+
+/**
+ * Calculate trend direction
+ */
+export function getTrendDirection(current: number, previous: number): 'up' | 'down' | 'neutral' {
+  if (current > previous) return 'up';
+  if (current < previous) return 'down';
+  return 'neutral';
+}
+
+/**
+ * Calculate percentage change
+ */
+export function getPercentageChange(current: number, previous: number): number {
+  if (previous === 0) return 0;
+  return ((current - previous) / previous) * 100;
+}

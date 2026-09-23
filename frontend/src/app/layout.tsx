@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import '../styles/globals.css';
-
-const inter = Inter({ subsets: ['latin'] });
+import { Providers } from '@/components/providers';
 
 export const metadata: Metadata = {
   title: 'SatisClient | Plateforme de satisfaction et réclamations',
   description: 'Transformez vos avis et réclamations en amélioration continue',
+  keywords: ['satisfaction client', 'réclamations', 'feedback', 'NPS', 'CSAT', 'qualité'],
 };
 
 export default function RootLayout({
@@ -15,8 +16,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr">
-      <body className={inter.className}>{children}</body>
+    <html lang="fr" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className="font-sans">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
