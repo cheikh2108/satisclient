@@ -169,7 +169,7 @@ export default function LandingPage() {
                 href="/register"
                 className="arrow-nudge-parent inline-flex items-center justify-center gap-2 bg-[#3a5a40] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#2d4731] transition-colors"
               >
-                Essayer gratuitement 14 jours
+                Essayer gratuitement 7 jours
                 <ChevronRight className="arrow-nudge h-4 w-4" />
               </Link>
               <Link
@@ -262,7 +262,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             {[
-              { icon: Clock, value: '14 jours', label: "d'essai gratuit, sans carte bancaire" },
+              { icon: Clock, value: '7 jours', label: "d'essai gratuit, sans carte bancaire" },
               { icon: Building2, value: '5 minutes', label: 'pour configurer votre premier site' },
               { icon: Users, value: '6 rôles', label: 'utilisateurs avec permissions granulaires' },
               { icon: Download, value: 'PDF & Excel', label: 'Rapports exportables en un clic' },
@@ -555,7 +555,7 @@ export default function LandingPage() {
             ))}
           </div>
           <p className="text-center text-sm text-[#8a8a8a] mt-6">
-            Tous les plans incluent 14 jours d'essai gratuit. Aucune carte bancaire requise.
+            Tous les plans incluent 7 jours d'essai gratuit. Aucune carte bancaire requise.
           </p>
         </div>
       </section>
@@ -574,7 +574,7 @@ export default function LandingPage() {
               href="/register"
               className="inline-flex items-center justify-center gap-2 bg-white text-[#3a5a40] px-6 py-3 rounded-lg font-semibold hover:bg-[#f5f0e8] transition-colors"
             >
-              Essayer gratuitement 14 jours
+              Essayer gratuitement 7 jours
               <ChevronRight className="h-4 w-4" />
             </Link>
             <a
