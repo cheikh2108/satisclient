@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Info, MoreHorizontal } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 // Generate dense data (multiple days per month) - STATIC pour éviter hydratation error
 const generateMonthData = (month: string, baseNew: number, baseExisting: number, seed: number) => {
@@ -38,11 +37,10 @@ const data = {
   ],
 };
 
-type Period = 'weekly' | 'monthly' | 'yearly';
+type Period = 'monthly';
 
 export default function PremiumSalesChart() {
-  const [period, setPeriod] = useState<Period>('monthly');
-  const [hoveredData, setHoveredData] = useState<any>(null);
+  const [period] = useState<Period>('monthly');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -53,7 +51,7 @@ export default function PremiumSalesChart() {
 
   // Calculate totals
   const totalRevenue = chartData.reduce(
-    (sum, item) => sum + item.newUser + item.existingUser,
+    (sum: number, item: { newUser: number; existingUser: number }) => sum + item.newUser + item.existingUser,
     0
   );
 
@@ -132,22 +130,8 @@ export default function PremiumSalesChart() {
           </div>
         </div>
 
-        {/* Period Selector */}
-        <div className="flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-[#0f0f0f] p-1 w-fit border border-transparent dark:border-slate-800/40">
-          {(['weekly', 'monthly', 'yearly'] as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={cn(
-                'px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all capitalize active:scale-95',
-                period === p
-                  ? 'bg-white dark:bg-[#1a1a1a] text-slate-900 dark:text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              )}
-            >
-              {p}
-            </button>
-          ))}
+        <div className="rounded-lg bg-slate-100 dark:bg-[#0f0f0f] px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 border border-transparent dark:border-slate-800/40">
+          Mensuel
         </div>
       </div>
 
