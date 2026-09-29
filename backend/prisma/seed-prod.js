@@ -10,7 +10,12 @@ async function main() {
     return;
   }
 
-  const passwordHash = await bcrypt.hash(process.env.SUPER_ADMIN_PASSWORD || 'Admin@SatisClient2026!', 12);
+  const password = process.env.SUPER_ADMIN_PASSWORD;
+  if (!password) {
+    console.error('SUPER_ADMIN_PASSWORD env variable is required');
+    process.exit(1);
+  }
+  const passwordHash = await bcrypt.hash(password, 12);
 
   const user = await prisma.user.create({
     data: {
