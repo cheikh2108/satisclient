@@ -111,21 +111,11 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          {/* Infos de test */}
-          <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800/60">
-            <p className="text-xs text-slate-500 dark:text-slate-400 text-center mb-2">
-              Compte de test :
-            </p>
-            <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1 bg-slate-50 dark:bg-[#1a1a1a] rounded-lg p-3">
-              <p><strong>Email:</strong> admin@satisclient.fr</p>
-              <p><strong>Mot de passe:</strong> Admin123!Pass</p>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
         <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-6">
-          SatisClient © 2024 - Plateforme de satisfaction client
+          SatisClient © 2026 - Plateforme de satisfaction client
         </p>
       </div>
     </div>
