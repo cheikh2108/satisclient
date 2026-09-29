@@ -4,6 +4,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import * as compression from 'compression';
+import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { SanitizePipe } from './common/pipes/sanitize.pipe';
@@ -56,7 +57,10 @@ async function bootstrap() {
   // 2. Compression
   app.use(compression());
 
-  // 3. CORS Configuration
+  // 3. Cookie parser (pour les cookies httpOnly d'authentification)
+  app.use(cookieParser());
+
+  // 4. CORS Configuration
   const allowedOrigins = configService.get('CORS_ORIGIN')?.split(',') || [
     'http://localhost:3000',
     'http://localhost:3001',

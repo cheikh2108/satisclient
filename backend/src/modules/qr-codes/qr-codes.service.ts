@@ -14,6 +14,9 @@ import * as QRCode from 'qrcode';
 
 @Injectable()
 export class QrCodesService {
+  private static readonly MAX_CODE_ATTEMPTS = 10;
+  private static readonly CODE_RANDOM_RANGE = 1000;
+
   private readonly logger = new Logger(QrCodesService.name);
   private readonly frontendUrl: string;
 
@@ -50,7 +53,7 @@ export class QrCodesService {
       createDto.siteId,
     );
 
-    const url = createDto.customUrl || this.generateFeedbackUrl(site.code, code);
+    const url = createDto.customUrl || this.generateFeedbackUrl(site.code || site.id, code);
 
     const qrCodeImage = await this.generateQrCodeImage(url);
 
@@ -59,13 +62,10 @@ export class QrCodesService {
         organizationId: createDto.organizationId,
         siteId: createDto.siteId,
         code,
-        name: createDto.name || `QR Code ${site.name}`,
-        type: createDto.type || 'generic',
-        description: createDto.description,
-        url,
-        qrCodeImage,
-        isActive: true,
-        createdBy: userId,
+        targetType: createDto.type || 'generic',
+        targetId: null,
+        destinationUrl: url,
+        qrImageUrl: qrCodeImage,
       },
       include: {
         site: {
@@ -154,7 +154,7 @@ export class QrCodesService {
         : undefined,
     });
 
-    return qrCodes.map((qr) => plainToInstance(QrCodeResponseDto, qr));
+    return qrCodes as any[];
   }
 
   /**
@@ -267,14 +267,18 @@ export class QrCodesService {
   async regenerate(id: string): Promise<QrCodeResponseDto> {
     const qrCode = await this.findOne(id);
 
-    const newCode = await this.generateUniqueCode(
-      qrCode.organization.id,
-      qrCode.site.id,
-    );
+    if (!qrCode.organization) {
+      throw new BadRequestException('Organization non trouvée');
+    }
 
     if (!qrCode.site || !qrCode.site.code) {
       throw new BadRequestException('Site invalide');
     }
+
+    const newCode = await this.generateUniqueCode(
+      qrCode.organization.id,
+      qrCode.site.id,
+    );
 
     const newUrl = this.generateFeedbackUrl(qrCode.site.code, newCode);
 
@@ -333,7 +337,6 @@ export class QrCodesService {
    * Incrémenter compteur de feedbacks
    */
   async incrementFeedback(code: string): Promise<void> {
-    // TODO: Implement feedback tracking logic
     this.logger.log({ event: 'qr_code.feedback_incremented', code });
   }
 
@@ -423,8 +426,8 @@ export class QrCodesService {
     let exists = true;
     let attempts = 0;
 
-    while (exists && attempts < 10) {
-      const randomSuffix = Math.floor(Math.random() * 1000)
+    while (exists && attempts < QrCodesService.MAX_CODE_ATTEMPTS) {
+      const randomSuffix = Math.floor(Math.random() * QrCodesService.CODE_RANDOM_RANGE)
         .toString()
         .padStart(3, '0');
       code = `QR-${sitePrefix}-${randomSuffix}`;

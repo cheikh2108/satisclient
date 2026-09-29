@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import type { Multer } from 'multer';
 
 @Injectable()
 export class FilesService {
@@ -15,6 +16,12 @@ export class FilesService {
     'image/gif',
     'image/webp',
     'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain',
+    'text/csv',
   ];
 
   constructor(private readonly configService: ConfigService) {
@@ -29,7 +36,7 @@ export class FilesService {
   }
 
   async uploadFile(
-    file: Express.Multer.File,
+    file: Multer.File,
     userId: string,
   ): Promise<any> {
     if (!file) {
@@ -40,8 +47,14 @@ export class FilesService {
       throw new BadRequestException('File too large (max 10MB)');
     }
 
-    if (!this.allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException('File type not allowed');
+    this.logger.log(`Upload reçu: mimetype=${file.mimetype}, size=${file.size}, name=${file.originalname}`);
+    // Validation par extension (plus fiable que le mimetype sur tous les navigateurs)
+    const ext = (file.originalname?.split('.').pop() || '').toLowerCase();
+    const allowedExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt', 'csv'];
+    const mimeOk = this.allowedMimeTypes.includes(file.mimetype);
+    const extOk = allowedExts.includes(ext);
+    if (!mimeOk && !extOk) {
+      throw new BadRequestException(`Type de fichier non autorisé: ${file.mimetype} (.${ext})`);
     }
 
     const year = new Date().getFullYear();
@@ -83,7 +96,10 @@ export class FilesService {
   }
 
   async deleteFile(filepath: string): Promise<void> {
-    const fullPath = path.join(this.uploadDir, filepath);
+    const fullPath = path.resolve(path.join(this.uploadDir, filepath));
+    if (!fullPath.startsWith(path.resolve(this.uploadDir))) {
+      throw new Error('Chemin invalide');
+    }
     if (fs.existsSync(fullPath)) {
       fs.unlinkSync(fullPath);
       this.logger.log({ event: 'file.deleted', filepath });

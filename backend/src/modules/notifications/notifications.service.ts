@@ -110,7 +110,7 @@ export class NotificationsService {
       where: { id },
       data: {
         readAt: new Date(),
-        status: NotificationStatus.read,
+        status: NotificationStatus.delivered,
       },
     });
 
@@ -135,7 +135,7 @@ export class NotificationsService {
       },
       data: {
         readAt: new Date(),
-        status: NotificationStatus.read,
+        status: NotificationStatus.delivered,
       },
     });
 
@@ -211,19 +211,19 @@ export class NotificationsService {
   }
 
   /**
-   * Récupérer préférences (stockées dans user.settings)
+   * Récupérer préférences (stockées dans user.preferences)
    */
   async getPreferences(userId: string): Promise<NotificationPreferencesDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { settings: true },
+      select: { preferences: true },
     });
 
     if (!user) {
       throw new NotFoundException('Utilisateur non trouvé');
     }
 
-    const settings = (user.settings as any) || {};
+    const settings = (user.preferences as any) || {};
     const notifPrefs = settings.notifications || {};
 
     return {
@@ -249,19 +249,19 @@ export class NotificationsService {
   ): Promise<NotificationPreferencesDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { settings: true },
+      select: { preferences: true },
     });
 
     if (!user) {
       throw new NotFoundException('Utilisateur non trouvé');
     }
 
-    const settings = (user.settings as any) || {};
+    const settings = (user.preferences as any) || {};
 
     await this.prisma.user.update({
       where: { id: userId },
       data: {
-        settings: {
+        preferences: {
           ...settings,
           notifications: preferences,
         } as any,

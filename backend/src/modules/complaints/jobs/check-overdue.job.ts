@@ -72,9 +72,9 @@ export class CheckOverdueJob {
           new ComplaintOverdueEvent(
             complaint.id,
             complaint.ticketNumber,
-            complaint.slaDueDate,
+            complaint.slaDueDate!,
             complaint.priority,
-            complaint.assignedTo,
+            complaint.assignedTo || undefined,
             complaint.assignee?.email,
           ),
         );
@@ -85,9 +85,9 @@ export class CheckOverdueJob {
           event: 'complaint.overdue.detected',
           ticketNumber: complaint.ticketNumber,
           priority: complaint.priority,
-          slaDueDate: complaint.slaDueDate,
+          slaDueDate: complaint.slaDueDate!,
           daysOverdue: Math.floor(
-            (now.getTime() - complaint.slaDueDate.getTime()) /
+            (now.getTime() - complaint.slaDueDate!.getTime()) /
               (1000 * 60 * 60 * 24),
           ),
         });

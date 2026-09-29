@@ -110,9 +110,9 @@ export class ComplaintsService {
           complaint.siteId,
           complaint.title,
           complaint.priority,
-          complaint.slaDueDate,
-          complaint.complainantEmail,
-          complaint.complainantName,
+          complaint.slaDueDate!,
+          complaint.complainantEmail || undefined,
+          complaint.complainantName || undefined,
         ),
       );
 
@@ -242,7 +242,7 @@ export class ComplaintsService {
         userId,
         user.email,
         `${user.firstName} ${user.lastName}`,
-        updated.complainantEmail,
+        updated.complainantEmail || undefined,
       ),
     );
 
@@ -331,9 +331,9 @@ export class ComplaintsService {
         id,
         updated.ticketNumber,
         resolutionSummary,
-        resolutionCategory,
-        updated.complainantEmail,
-        updated.complainantName,
+        resolutionCategory || 'other',
+        updated.complainantEmail || undefined,
+        updated.complainantName || undefined,
       ),
     );
 

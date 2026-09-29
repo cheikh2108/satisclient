@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Search, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { usePathname } from 'next/navigation';
@@ -7,6 +8,11 @@ import { usePathname } from 'next/navigation';
 export function Topbar() {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Generate breadcrumb from pathname
   const pathSegments = pathname.split('/').filter(Boolean);
@@ -43,7 +49,9 @@ export function Topbar() {
             className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all"
             aria-label="Toggle theme"
           >
-            {theme === 'dark' ? (
+            {!mounted ? (
+              <div className="h-4 w-4" />
+            ) : theme === 'dark' ? (
               <Sun className="h-4 w-4 text-slate-600 dark:text-slate-400" />
             ) : (
               <Moon className="h-4 w-4 text-slate-600 dark:text-slate-400" />

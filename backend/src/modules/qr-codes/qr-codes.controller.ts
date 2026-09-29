@@ -40,7 +40,7 @@ export class QrCodesController {
   constructor(private readonly qrCodesService: QrCodesService) {}
 
   @Post()
-  @Roles(UserRole.super_admin, UserRole.admin, UserRole.manager)
+  @Roles(UserRole.super_admin, UserRole.org_admin, UserRole.quality_manager, UserRole.service_manager)
   @ApiOperation({
     summary: 'Créer un QR code',
     description: 'Génère un QR code pour un site spécifique',
@@ -62,8 +62,9 @@ export class QrCodesController {
   @Get()
   @Roles(
     UserRole.super_admin,
-    UserRole.admin,
-    UserRole.manager,
+    UserRole.org_admin,
+    UserRole.quality_manager,
+    UserRole.service_manager,
     UserRole.agent,
   )
   @ApiOperation({
@@ -115,6 +116,7 @@ export class QrCodesController {
     type: [QrCodeResponseDto],
   })
   async findAll(
+    @Request() req,
     @Query('organizationId') organizationId?: string,
     @Query('siteId') siteId?: string,
     @Query('isActive') isActive?: string,
@@ -124,8 +126,9 @@ export class QrCodesController {
     @Query('includeRelations', new DefaultValuePipe(false), ParseBoolPipe)
     includeRelations?: boolean,
   ): Promise<QrCodeResponseDto[]> {
+    const orgId = organizationId || req.user?.organizationId;
     return this.qrCodesService.findAll({
-      organizationId,
+      organizationId: orgId,
       siteId,
       isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
       type,
@@ -138,8 +141,9 @@ export class QrCodesController {
   @Get('stats')
   @Roles(
     UserRole.super_admin,
-    UserRole.admin,
-    UserRole.manager,
+    UserRole.org_admin,
+    UserRole.quality_manager,
+    UserRole.service_manager,
     UserRole.agent,
   )
   @ApiOperation({
@@ -181,17 +185,20 @@ export class QrCodesController {
     },
   })
   async getStats(
+    @Request() req,
     @Query('organizationId') organizationId?: string,
     @Query('siteId') siteId?: string,
   ) {
-    return this.qrCodesService.getStats({ organizationId, siteId });
+    const orgId = organizationId || req.user?.organizationId;
+    return this.qrCodesService.getStats({ organizationId: orgId, siteId });
   }
 
   @Get('code/:code')
   @Roles(
     UserRole.super_admin,
-    UserRole.admin,
-    UserRole.manager,
+    UserRole.org_admin,
+    UserRole.quality_manager,
+    UserRole.service_manager,
     UserRole.agent,
   )
   @ApiOperation({
@@ -212,8 +219,9 @@ export class QrCodesController {
   @Get(':id')
   @Roles(
     UserRole.super_admin,
-    UserRole.admin,
-    UserRole.manager,
+    UserRole.org_admin,
+    UserRole.quality_manager,
+    UserRole.service_manager,
     UserRole.agent,
   )
   @ApiOperation({
@@ -234,7 +242,7 @@ export class QrCodesController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.super_admin, UserRole.admin, UserRole.manager)
+  @Roles(UserRole.super_admin, UserRole.org_admin, UserRole.quality_manager, UserRole.service_manager)
   @ApiOperation({
     summary: 'Mettre à jour',
     description: 'Met à jour un QR code',
@@ -254,7 +262,7 @@ export class QrCodesController {
   }
 
   @Post(':id/regenerate')
-  @Roles(UserRole.super_admin, UserRole.admin, UserRole.manager)
+  @Roles(UserRole.super_admin, UserRole.org_admin, UserRole.quality_manager, UserRole.service_manager)
   @ApiOperation({
     summary: 'Régénérer QR code',
     description:
@@ -287,7 +295,7 @@ export class QrCodesController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.super_admin, UserRole.admin)
+  @Roles(UserRole.super_admin, UserRole.org_admin)
   @ApiOperation({
     summary: 'Supprimer QR code',
     description: 'Supprime un QR code (admin/super_admin uniquement)',

@@ -19,11 +19,22 @@ import {
   X,
   BarChart3,
   FileCheck,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WorkspaceSelector } from './workspace-selector';
+import { useCurrentUser } from '@/hooks';
 
-const mainMenu = [
+// ─── Menus par rôle ───────────────────────────────────────────────────────────
+
+const platformMenu = [
+  { name: 'Plateforme', href: '/dashboard', icon: Activity },
+  { name: 'Organisations', href: '/dashboard/organizations', icon: Building2 },
+  { name: 'Utilisateurs', href: '/dashboard/users', icon: Users },
+  { name: 'Audit', href: '/dashboard/audit', icon: FileCheck },
+];
+
+const clientMainMenu = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Feedbacks', href: '/dashboard/feedbacks', icon: MessageSquare },
   { name: 'Réclamations', href: '/dashboard/reclamations', icon: AlertCircle },
@@ -32,28 +43,41 @@ const mainMenu = [
   { name: 'Notifications', href: '/dashboard/notifications', icon: Bell },
 ];
 
-const organizations = [
-  { name: 'Organisations', href: '/dashboard/organizations', icon: Building2 },
+const clientOrgMenu = [
   { name: 'Sites', href: '/dashboard/sites', icon: MapPin },
   { name: 'Utilisateurs', href: '/dashboard/users', icon: Users },
 ];
 
-const management = [
+const clientManagementMenu = [
   { name: 'Rôles & Permissions', href: '/dashboard/roles', icon: Shield },
   { name: 'Audit', href: '/dashboard/audit', icon: FileCheck },
   { name: 'Fichiers', href: '/dashboard/files', icon: FileText },
 ];
 
+// Menus limités pour les agents
+const agentMainMenu = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Feedbacks', href: '/dashboard/feedbacks', icon: MessageSquare },
+  { name: 'Réclamations', href: '/dashboard/reclamations', icon: AlertCircle },
+  { name: 'Notifications', href: '/dashboard/notifications', icon: Bell },
+];
+
 export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { data: currentUser } = useCurrentUser();
+  const role = (currentUser as any)?.role as string | undefined;
 
-  const NavLink = ({ item, isActive }: { item: typeof mainMenu[0]; isActive: boolean }) => (
+  const isSuperAdmin = role === 'super_admin';
+  const isAgent = role === 'agent' || role === 'client';
+  const isAdmin = role === 'org_admin' || role === 'quality_manager' || role === 'service_manager';
+
+  const NavLink = ({ item }: { item: { name: string; href: string; icon: any } }) => (
     <Link
       href={item.href}
       className={cn(
         'group flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-normal transition-all',
-        isActive
+        pathname === item.href
           ? 'bg-white dark:bg-[#1a1a1a] text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-slate-700/60'
           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/50 dark:hover:bg-[#1a1a1a]/50'
       )}
@@ -63,57 +87,55 @@ export function Sidebar() {
     </Link>
   );
 
+  const Section = ({ label, items }: { label: string; items: typeof clientMainMenu }) => (
+    <>
+      <p className="px-4 mb-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        {label}
+      </p>
+      <div className="space-y-1">
+        {items.map((item) => <NavLink key={item.name} item={item} />)}
+      </div>
+      <div className="h-px bg-slate-200 dark:bg-slate-800/40 mx-4" />
+    </>
+  );
+
   const SidebarContent = () => (
     <>
-      {/* Workspace Selector */}
       <div className="p-4">
         <WorkspaceSelector />
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-6 px-3 pb-4 overflow-y-auto scrollbar-thin">
-        {/* Main Menu */}
-        <p className="px-4 mb-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          Main Menu
-        </p>
-        <div className="space-y-1">
-          {mainMenu.map((item) => (
-            <NavLink key={item.name} item={item} isActive={pathname === item.href} />
-          ))}
-        </div>
+      <nav className="flex-1 space-y-4 px-3 pb-4 overflow-y-auto scrollbar-thin">
 
-        <div className="h-px bg-slate-200 dark:bg-slate-800/40 mx-4" />
+        {/* ── Super Admin : vue plateforme ── */}
+        {isSuperAdmin && (
+          <>
+            <Section label="Administration" items={platformMenu} />
+          </>
+        )}
 
-        <p className="px-4 mb-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          Organisation
-        </p>
-        <div className="space-y-1">
-          {organizations.map((item) => (
-            <NavLink key={item.name} item={item} isActive={pathname === item.href} />
-          ))}
-        </div>
+        {/* ── Client : vue complète (org_admin, managers) ── */}
+        {(isAdmin || (!isSuperAdmin && !isAgent)) && (
+          <>
+            <Section label="Main Menu" items={clientMainMenu} />
+            <Section label="Organisation" items={clientOrgMenu} />
+            <Section label="Management" items={clientManagementMenu} />
+          </>
+        )}
 
-        <div className="h-px bg-slate-200 dark:bg-slate-800/40 mx-4" />
+        {/* ── Agent : vue limitée ── */}
+        {isAgent && (
+          <>
+            <Section label="Menu" items={agentMainMenu} />
+          </>
+        )}
 
-        <p className="px-4 mb-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          Management
-        </p>
-        <div className="space-y-1">
-          {management.map((item) => (
-            <NavLink key={item.name} item={item} isActive={pathname === item.href} />
-          ))}
-        </div>
-
-        <div className="h-px bg-slate-200 dark:bg-slate-800/40 mx-4" />
-
-        <p className="px-4 mb-3 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        {/* Paramètres — tous les rôles */}
+        <p className="px-4 mb-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           Paramètres
         </p>
         <div className="space-y-1">
-          <NavLink
-            item={{ name: 'Paramètres', href: '/dashboard/settings', icon: Settings }}
-            isActive={pathname === '/dashboard/settings'}
-          />
+          <NavLink item={{ name: 'Paramètres', href: '/dashboard/settings', icon: Settings }} />
         </div>
       </nav>
     </>
@@ -121,12 +143,10 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Desktop Sidebar - Toujours ouvert */}
       <aside className="hidden lg:flex fixed left-0 top-0 z-30 h-full w-[280px] flex-col bg-slate-50/50 dark:bg-[#0f0f0f] border-r border-slate-200/50 dark:border-slate-800/60">
         <SidebarContent />
       </aside>
 
-      {/* Mobile Overlay */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-slate-900/20 backdrop-blur-sm lg:hidden"
@@ -134,7 +154,6 @@ export function Sidebar() {
         />
       )}
 
-      {/* Mobile Sidebar */}
       <aside
         className={cn(
           'fixed left-0 top-0 z-50 h-full w-[280px] flex flex-col bg-slate-50 dark:bg-[#0f0f0f] border-r border-slate-200 dark:border-slate-800/60 transition-transform lg:hidden',
@@ -153,7 +172,6 @@ export function Sidebar() {
         <SidebarContent />
       </aside>
 
-      {/* Mobile/Tablet Menu Button */}
       <button
         onClick={() => setMobileOpen(true)}
         className="fixed top-[18px] left-4 z-30 flex h-9 w-9 items-center justify-center rounded-lg bg-white dark:bg-[#1a1a1a] border border-slate-200/80 dark:border-slate-700/60 shadow-sm hover:bg-slate-50 dark:hover:bg-[#222222] hover:border-slate-300 dark:hover:border-slate-600/80 active:scale-[0.97] transition-all lg:hidden"

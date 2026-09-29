@@ -10,7 +10,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       datasources: {
         db: {
           url: process.env.DATABASE_URL
-            ? `${process.env.DATABASE_URL}?connect_timeout=5`
+            ? process.env.DATABASE_URL.includes('?')
+              ? `${process.env.DATABASE_URL}&connect_timeout=5`
+              : `${process.env.DATABASE_URL}?connect_timeout=5`
             : undefined,
         },
       },
@@ -51,8 +53,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async cleanDatabase() {
     // Utilisé uniquement pour les tests
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Cannot clean database in production!');
+    if (!['test', 'development'].includes(process.env.NODE_ENV ?? '')) {
+      throw new Error('cleanDatabase is only allowed in test/development environments');
     }
 
     const models = Reflect.ownKeys(this).filter((key) => key[0] !== '_');

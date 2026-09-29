@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  Request,
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
@@ -69,8 +70,17 @@ export class SitesController {
     status: 404,
     description: 'Organisation non trouvée',
   })
-  create(@Body() createSiteDto: CreateSiteDto): Promise<SiteResponseDto> {
-    return this.sitesService.create(createSiteDto);
+  create(@Request() req, @Body() createSiteDto: CreateSiteDto): Promise<SiteResponseDto> {
+    return this.sitesService.create({ ...createSiteDto, organizationId: createSiteDto.organizationId || req.user?.organizationId });
+  }
+
+  @Get('stats')
+  @Roles(UserRole.super_admin, UserRole.org_admin, UserRole.quality_manager)
+  @ApiOperation({ summary: 'Statistiques des sites' })
+  @ApiQuery({ name: 'organizationId', required: false, type: String })
+  async getStats(@Request() req, @Query('organizationId') organizationId?: string) {
+    const orgId = organizationId || req.user?.organizationId;
+    return this.sitesService.getStats(orgId);
   }
 
   @Get()
@@ -135,6 +145,7 @@ export class SitesController {
     description: 'Accès refusé',
   })
   findAll(
+    @Request() req,
     @Query('organizationId') organizationId?: string,
     @Query('skip') skip?: number,
     @Query('take') take?: number,
@@ -142,8 +153,9 @@ export class SitesController {
     @Query('isActive') isActive?: boolean,
     @Query('includeStats') includeStats?: boolean,
   ): Promise<SiteResponseDto[]> {
+    const orgId = organizationId || req.user?.organizationId;
     return this.sitesService.findAll({
-      organizationId,
+      organizationId: orgId,
       skip: skip ? +skip : undefined,
       take: take ? +take : undefined,
       type,

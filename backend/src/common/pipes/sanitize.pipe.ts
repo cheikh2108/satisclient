@@ -19,6 +19,10 @@ export class SanitizePipe implements PipeTransform {
     }
 
     if (typeof value === 'object') {
+      // Ne pas sanitizer les objets Multer File (Buffer, fichiers uploadés)
+      if (Buffer.isBuffer(value) || value?.buffer instanceof Buffer || value?.fieldname !== undefined) {
+        return value;
+      }
       return this.sanitizeObject(value);
     }
 
@@ -26,12 +30,12 @@ export class SanitizePipe implements PipeTransform {
   }
 
   private sanitizeString(str: string): string {
+    // Uniquement les balises HTML qui peuvent injecter du markup
+    // Les apostrophes et slashes ne sont PAS des vecteurs XSS dans du JSON
+    // React échappe déjà les valeurs à l'affichage
     return str
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#x27;')
-      .replace(/\//g, '&#x2F;')
       .trim();
   }
 

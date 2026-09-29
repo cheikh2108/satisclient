@@ -1,26 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// Données mensuelles réalistes
-const monthlyData = [
-  { month: 'Jan', feedbacks: 2100, satisfaction: 72, réclamations: 45 },
-  { month: 'Fév', feedbacks: 2350, satisfaction: 73, réclamations: 42 },
-  { month: 'Mar', feedbacks: 2680, satisfaction: 75, réclamations: 38 },
-  { month: 'Avr', feedbacks: 2890, satisfaction: 76, réclamations: 35 },
-  { month: 'Mai', feedbacks: 3150, satisfaction: 78, réclamations: 32 },
-  { month: 'Juin', feedbacks: 3420, satisfaction: 80, réclamations: 28 },
-];
-
-const weeklyData = [
-  { week: 'S1', feedbacks: 720, satisfaction: 78, réclamations: 8 },
-  { week: 'S2', feedbacks: 765, satisfaction: 79, réclamations: 7 },
-  { week: 'S3', feedbacks: 810, satisfaction: 80, réclamations: 6 },
-  { week: 'S4', feedbacks: 845, satisfaction: 81, réclamations: 5 },
-];
+import { useQuery } from '@tanstack/react-query';
+import { useFeedbackStats, useFeedbacks } from '@/hooks';
+import { reclamationsApi } from '@/lib/api/reclamations';
 
 type Period = 'weekly' | 'monthly';
 
@@ -32,40 +18,122 @@ export default function ActivityChart() {
     setMounted(true);
   }, []);
 
+  const { data: feedbackStats } = useFeedbackStats();
+  const { data: feedbacksData } = useFeedbacks({ take: 30 } as any);
+  const { data: reclamationsData } = useQuery({
+    queryKey: ['reclamations', 'activity-chart'],
+    queryFn: () => reclamationsApi.getAll({ take: 30 } as any),
+  });
+
+  const monthlyData = React.useMemo(() => {
+    const feedbacks = feedbacksData?.data || [];
+    const reclamations = reclamationsData?.data || [];
+
+    return Array.from({ length: 6 }, (_, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (5 - i));
+      const y = date.getFullYear();
+      const m = date.getMonth();
+
+      const mFeedbacks = feedbacks.filter(f => {
+        const d = new Date(f.createdAt);
+        return d.getFullYear() === y && d.getMonth() === m;
+      });
+      const mReclamations = reclamations.filter(r => {
+        const d = new Date(r.createdAt);
+        return d.getFullYear() === y && d.getMonth() === m;
+      });
+      const positive = mFeedbacks.filter(f => (f as any).commentSentiment === 'positive').length;
+      const satisfaction = mFeedbacks.length > 0
+        ? Math.round((positive / mFeedbacks.length) * 100)
+        : 0;
+
+      return {
+        month: date.toLocaleDateString('fr-FR', { month: 'short' }),
+        feedbacks: mFeedbacks.length,
+        satisfaction,
+        réclamations: mReclamations.length,
+      };
+    });
+  }, [feedbacksData, reclamationsData]);
+
+  const weeklyData = React.useMemo(() => {
+    const feedbacks = feedbacksData?.data || [];
+    const reclamations = reclamationsData?.data || [];
+
+    return Array.from({ length: 4 }, (_, i) => {
+      const weekEnd = new Date();
+      weekEnd.setDate(weekEnd.getDate() - (3 - i) * 7);
+      weekEnd.setHours(23, 59, 59, 999);
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekEnd.getDate() - 6);
+      weekStart.setHours(0, 0, 0, 0);
+
+      const wFeedbacks = feedbacks.filter(f => {
+        const d = new Date(f.createdAt);
+        return d >= weekStart && d <= weekEnd;
+      });
+      const wReclamations = reclamations.filter(r => {
+        const d = new Date(r.createdAt);
+        return d >= weekStart && d <= weekEnd;
+      });
+      const positive = wFeedbacks.filter(f => (f as any).commentSentiment === 'positive').length;
+      const satisfaction = wFeedbacks.length > 0
+        ? Math.round((positive / wFeedbacks.length) * 100)
+        : 0;
+
+      return {
+        week: `S${i + 1}`,
+        feedbacks: wFeedbacks.length,
+        satisfaction,
+        réclamations: wReclamations.length,
+      };
+    });
+  }, [feedbacksData, reclamationsData]);
+
   const data = period === 'monthly' ? monthlyData : weeklyData;
   const latest = data[data.length - 1];
   const previous = data[data.length - 2];
 
+  const totalFeedbacks = feedbackStats?.total ?? latest.feedbacks;
+  const satisfactionPct = feedbackStats
+    ? Math.round(((feedbackStats as any).bySentiment?.positive ?? 0) / Math.max(feedbackStats.total, 1) * 100)
+    : latest.satisfaction;
+
   const feedbackChange = latest.feedbacks - previous.feedbacks;
   const satisfactionChange = latest.satisfaction - previous.satisfaction;
-  const feedbackPercent = ((feedbackChange / previous.feedbacks) * 100).toFixed(1);
-  const satisfactionPercent = ((satisfactionChange / previous.satisfaction) * 100).toFixed(1);
+  const feedbackPercent = previous.feedbacks > 0
+    ? ((feedbackChange / previous.feedbacks) * 100).toFixed(1)
+    : '0.0';
+  const satisfactionPercent = previous.satisfaction > 0
+    ? ((satisfactionChange / previous.satisfaction) * 100).toFixed(1)
+    : '0.0';
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const d = payload[0].payload;
       return (
         <div className="rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-sm p-3 shadow-xl">
           <p className="mb-2 text-xs font-semibold text-slate-900 dark:text-white">
-            {data.month || data.week}
+            {d.month || d.week}
           </p>
           <div className="space-y-1.5 text-xs">
             <div className="flex items-center justify-between gap-4">
               <span className="text-slate-600 dark:text-slate-400">Feedbacks</span>
               <span className="font-semibold text-slate-900 dark:text-white tabular-nums">
-                {data.feedbacks.toLocaleString()}
+                {d.feedbacks.toLocaleString()}
               </span>
             </div>
             <div className="flex items-center justify-between gap-4">
               <span className="text-slate-600 dark:text-slate-400">Satisfaction</span>
               <span className="font-semibold text-primary-600 dark:text-primary-400 tabular-nums">
-                {data.satisfaction}%
+                {d.satisfaction}%
               </span>
             </div>
             <div className="flex items-center justify-between gap-4">
               <span className="text-slate-600 dark:text-slate-400">Réclamations</span>
               <span className="font-semibold text-amber-600 dark:text-amber-400 tabular-nums">
-                {data.réclamations}
+                {d.réclamations}
               </span>
             </div>
           </div>
@@ -113,7 +181,7 @@ export default function ActivityChart() {
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Total Feedbacks</p>
           <div className="flex items-end gap-2">
             <p className="text-xl font-bold text-slate-900 dark:text-white tabular-nums">
-              {latest.feedbacks.toLocaleString()}
+              {totalFeedbacks.toLocaleString()}
             </p>
             <div className={cn(
               'flex items-center gap-0.5 text-xs font-medium mb-0.5',
@@ -129,7 +197,7 @@ export default function ActivityChart() {
           <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Satisfaction</p>
           <div className="flex items-end gap-2">
             <p className="text-xl font-bold text-primary-600 dark:text-primary-400 tabular-nums">
-              {latest.satisfaction}%
+              {satisfactionPct}%
             </p>
             <div className={cn(
               'flex items-center gap-0.5 text-xs font-medium mb-0.5',

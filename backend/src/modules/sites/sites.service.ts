@@ -156,6 +156,25 @@ export class SitesService {
     });
   }
 
+  async getStats(organizationId?: string) {
+    const where: any = {};
+    if (organizationId) where.organizationId = organizationId;
+
+    const [total, active, inactive, byType] = await Promise.all([
+      this.prisma.site.count({ where }),
+      this.prisma.site.count({ where: { ...where, isActive: true } }),
+      this.prisma.site.count({ where: { ...where, isActive: false } }),
+      this.prisma.site.groupBy({ by: ['type'], where, _count: true }),
+    ]);
+
+    return {
+      total,
+      active,
+      inactive,
+      byType: byType.reduce((acc, t) => ({ ...acc, [t.type]: t._count }), {} as Record<string, number>),
+    };
+  }
+
   /**
    * Récupérer un site par ID
    * - Inclut les statistiques

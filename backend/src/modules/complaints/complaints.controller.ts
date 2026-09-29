@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  Request,
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
@@ -60,8 +61,10 @@ export class ComplaintsController {
   })
   @ApiResponse({ status: 400, description: 'Données invalides' })
   @ApiResponse({ status: 404, description: 'Site non trouvé' })
-  create(@Body() createComplaintDto: CreateComplaintDto): Promise<ComplaintResponseDto> {
-    return this.complaintsService.create(createComplaintDto);
+  create(@Request() req, @Body() createComplaintDto: CreateComplaintDto): Promise<ComplaintResponseDto> {
+    // Forcer l'organizationId depuis le JWT
+    const orgId = createComplaintDto.organizationId || req.user?.organizationId;
+    return this.complaintsService.create({ ...createComplaintDto, organizationId: orgId });
   }
 
   @Get()
@@ -101,6 +104,7 @@ export class ComplaintsController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé' })
   findAll(
+    @Request() req,
     @Query('organizationId') organizationId?: string,
     @Query('siteId') siteId?: string,
     @Query('status') status?: ComplaintStatus,
@@ -114,8 +118,9 @@ export class ComplaintsController {
     @Query('take') take?: number,
     @Query('includeRelations') includeRelations?: boolean,
   ): Promise<ComplaintResponseDto[]> {
+    const orgId = organizationId || req.user?.organizationId;
     return this.complaintsService.findAll({
-      organizationId,
+      organizationId: orgId,
       siteId,
       status,
       priority,
@@ -159,11 +164,13 @@ export class ComplaintsController {
     },
   })
   getStats(
+    @Request() req,
     @Query('organizationId') organizationId?: string,
     @Query('siteId') siteId?: string,
     @Query('period') period?: string,
   ) {
-    return this.complaintsService.getStats({ organizationId, siteId, period: period || '30d' });
+    const orgId = organizationId || req.user?.organizationId;
+    return this.complaintsService.getStats({ organizationId: orgId, siteId, period: period || '30d' });
   }
 
   @Get('ticket/:ticketNumber')

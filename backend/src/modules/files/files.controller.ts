@@ -19,6 +19,7 @@ import {
 import { FilesService } from './files.service';
 import { FileResponseDto } from './dto/file-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { Multer } from 'multer';
 
 @ApiTags('Files')
 @ApiBearerAuth()
@@ -52,7 +53,7 @@ export class FilesController {
   @ApiResponse({ status: 400, description: 'Fichier invalide' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: Multer.File,
     @Request() req,
   ): Promise<FileResponseDto> {
     if (!file) {

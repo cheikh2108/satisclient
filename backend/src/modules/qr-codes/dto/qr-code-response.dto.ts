@@ -19,30 +19,26 @@ export class QrCodeResponseDto {
   @Expose()
   code: string;
 
-  @ApiPropertyOptional({ example: 'QR Code Kiosque Accueil' })
+  @ApiPropertyOptional({ example: 'feedback' })
   @Expose()
-  name?: string;
+  targetType?: string;
 
-  @ApiPropertyOptional({ example: 'kiosk' })
+  @ApiPropertyOptional()
   @Expose()
-  type?: string;
+  targetId?: string;
 
-  @ApiPropertyOptional({ example: 'Accueil principal - Borne tactile' })
-  @Expose()
-  description?: string;
-
-  @ApiProperty({
-    example: 'https://app.satisclient.com/public/feedback?site=agence-dakar&qr=QR-AGE-DAK-001',
+  @ApiPropertyOptional({
+    example: 'https://satisclient.sn/f/DKR-PLT',
   })
   @Expose()
-  url: string;
+  destinationUrl?: string;
 
   @ApiPropertyOptional({
     example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg...',
     description: 'QR code en base64 (PNG)',
   })
   @Expose()
-  qrCodeImage?: string;
+  qrImageUrl?: string;
 
   @ApiProperty({ example: true })
   @Expose()
@@ -51,10 +47,6 @@ export class QrCodeResponseDto {
   @ApiProperty({ example: 125 })
   @Expose()
   scanCount: number;
-
-  @ApiProperty({ example: 42 })
-  @Expose()
-  feedbackCount: number;
 
   @ApiPropertyOptional()
   @Expose()

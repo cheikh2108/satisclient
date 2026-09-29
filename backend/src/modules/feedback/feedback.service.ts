@@ -15,10 +15,15 @@ import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 import { FeedbackResponseDto } from './dto/feedback-response.dto';
 import { plainToInstance } from 'class-transformer';
-import { Sentiment } from '@prisma/client';
+import { Sentiment, Feedback } from '@prisma/client';
 
 @Injectable()
 export class FeedbackService {
+  private static readonly DAYS_IN_WEEK = 7;
+  private static readonly DAYS_IN_MONTH = 30;
+  private static readonly DAYS_IN_QUARTER = 90;
+  private static readonly MS_PER_DAY = 24 * 60 * 60 * 1000;
+
   private readonly logger = new Logger(FeedbackService.name);
 
   constructor(
@@ -66,27 +71,7 @@ export class FeedbackService {
     // 5. Créer le feedback
     try {
       const feedback = await this.prisma.feedback.create({
-        data: {
-          organizationId: createDto.organizationId,
-          siteId: createDto.siteId,
-          overallRating: createDto.overallRating,
-          criteriaRatings: createDto.criteriaRatings || {},
-          comment: createDto.comment,
-          commentSentiment,
-          commentKeywords,
-          userId: createDto.userId,
-          isAnonymous: createDto.isAnonymous ?? false,
-          respondentName: createDto.respondentName,
-          respondentEmail: createDto.respondentEmail,
-          respondentPhone: createDto.respondentPhone,
-          serviceDate: createDto.serviceDate
-            ? new Date(createDto.serviceDate)
-            : null,
-          feedbackChannel: createDto.feedbackChannel || 'web',
-          needsResponse: createDto.needsResponse ?? false,
-          ipAddress: createDto.ipAddress,
-          userAgent: createDto.userAgent,
-        },
+        data: this.buildFeedbackCreateData(createDto, commentSentiment, commentKeywords),
         include: {
           site: {
             select: {
@@ -113,44 +98,7 @@ export class FeedbackService {
         channel: feedback.feedbackChannel,
       });
 
-      // Émettre événement feedback.created
-      this.eventEmitter.emit(
-        'feedback.created',
-        new FeedbackCreatedEvent(
-          feedback.id,
-          feedback.organizationId,
-          feedback.siteId,
-          site.name,
-          feedback.overallRating,
-          feedback.comment,
-          feedback.commentSentiment,
-          feedback.respondentEmail,
-          feedback.respondentName,
-          feedback.feedbackChannel,
-          feedback.needsResponse,
-          createDto.qrCode,
-        ),
-      );
-
-      // Si feedback négatif, émettre événement spécifique
-      if (
-        (feedback.overallRating && feedback.overallRating <= 2) ||
-        commentSentiment === 'negative'
-      ) {
-        this.eventEmitter.emit(
-          'feedback.negative',
-          new FeedbackNegativeEvent(
-            feedback.id,
-            feedback.organizationId,
-            feedback.siteId,
-            site.name,
-            feedback.overallRating,
-            feedback.comment,
-            feedback.respondentEmail,
-            feedback.respondentName,
-          ),
-        );
-      }
+      this.emitFeedbackEvents(feedback, site.name, createDto.qrCode);
 
       return plainToInstance(FeedbackResponseDto, feedback);
     } catch (error) {
@@ -159,6 +107,75 @@ export class FeedbackService {
         error: error.message,
       });
       throw error;
+    }
+  }
+
+  private buildFeedbackCreateData(
+    createDto: CreateFeedbackDto,
+    commentSentiment: Sentiment,
+    commentKeywords: string[],
+  ) {
+    return {
+      organizationId: createDto.organizationId,
+      siteId: createDto.siteId,
+      overallRating: createDto.overallRating,
+      criteriaRatings: createDto.criteriaRatings || {},
+      comment: createDto.comment,
+      commentSentiment,
+      commentKeywords,
+      userId: createDto.userId,
+      isAnonymous: createDto.isAnonymous ?? false,
+      respondentName: createDto.respondentName,
+      respondentEmail: createDto.respondentEmail,
+      respondentPhone: createDto.respondentPhone,
+      serviceDate: createDto.serviceDate ? new Date(createDto.serviceDate) : null,
+      feedbackChannel: createDto.feedbackChannel || 'web',
+      needsResponse: createDto.needsResponse ?? false,
+      ipAddress: createDto.ipAddress,
+      userAgent: createDto.userAgent,
+    };
+  }
+
+  private emitFeedbackEvents(
+    feedback: Feedback,
+    siteName: string,
+    qrCode?: string,
+  ): void {
+    this.eventEmitter.emit(
+      'feedback.created',
+      new FeedbackCreatedEvent(
+        feedback.id,
+        feedback.organizationId,
+        feedback.siteId,
+        siteName,
+        feedback.overallRating ?? undefined,
+        feedback.comment || undefined,
+        feedback.commentSentiment,
+        feedback.respondentEmail || undefined,
+        feedback.respondentName || undefined,
+        feedback.feedbackChannel,
+        feedback.needsResponse,
+        qrCode,
+      ),
+    );
+
+    if (
+      (feedback.overallRating && feedback.overallRating <= 2) ||
+      feedback.commentSentiment === 'negative'
+    ) {
+      this.eventEmitter.emit(
+        'feedback.negative',
+        new FeedbackNegativeEvent(
+          feedback.id,
+          feedback.organizationId,
+          feedback.siteId,
+          siteName,
+          feedback.overallRating ?? undefined,
+          feedback.comment || undefined,
+          feedback.respondentEmail || undefined,
+          feedback.respondentName || undefined,
+        ),
+      );
     }
   }
 
@@ -353,7 +370,7 @@ export class FeedbackService {
             id,
             feedback.organizationId,
             feedback.siteId,
-            feedback.respondentEmail,
+            feedback.respondentEmail || undefined,
           ),
         );
       }
@@ -423,32 +440,15 @@ export class FeedbackService {
       where.siteId = siteId;
     }
 
-    // Total feedbacks
-    const total = await this.prisma.feedback.count({ where });
-
-    // Par sentiment
-    const bySentiment = await this.prisma.feedback.groupBy({
-      by: ['commentSentiment'],
-      where,
-      _count: true,
-    });
-
-    // Note moyenne
-    const avgRating = await this.prisma.feedback.aggregate({
-      where: {
-        ...where,
-        overallRating: { not: null },
-      },
-      _avg: { overallRating: true },
-    });
-
-    // Taux de réponse
-    const totalWithResponse = await this.prisma.feedback.count({
-      where: {
-        ...where,
-        responseSentAt: { not: null },
-      },
-    });
+    const [total, bySentiment, avgRating, totalWithResponse, unprocessed, needsResponse] =
+      await Promise.all([
+        this.prisma.feedback.count({ where }),
+        this.prisma.feedback.groupBy({ by: ['commentSentiment'], where, _count: true }),
+        this.prisma.feedback.aggregate({ where: { ...where, overallRating: { not: null } }, _avg: { overallRating: true } }),
+        this.prisma.feedback.count({ where: { ...where, responseSentAt: { not: null } } }),
+        this.prisma.feedback.count({ where: { ...where, isProcessed: false } }),
+        this.prisma.feedback.count({ where: { ...where, needsResponse: true, responseSentAt: null } }),
+      ]);
 
     return {
       period,
@@ -460,7 +460,9 @@ export class FeedbackService {
       averageRating: avgRating._avg.overallRating
         ? Math.round(avgRating._avg.overallRating * 10) / 10
         : null,
-      responseRate: total > 0 ? Math.round((totalWithResponse / total) * 100) / 100 : 0,
+      responseRate: total > 0 ? Math.round((totalWithResponse / total) * 1000) / 10 : 0,
+      unprocessed,
+      needsResponse,
     };
   }
 
@@ -539,6 +541,51 @@ export class FeedbackService {
     }
   }
 
+  async getTimeseries(params: {
+    organizationId?: string;
+    siteId?: string;
+    days?: number;
+  }) {
+    const { organizationId, siteId, days = 30 } = params;
+
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const where: any = { createdAt: { gte: startDate } };
+    if (organizationId) where.organizationId = organizationId;
+    if (siteId) where.siteId = siteId;
+
+    const feedbacks = await this.prisma.feedback.findMany({
+      where,
+      select: { createdAt: true, commentSentiment: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // Grouper par jour
+    const byDay = new Map<string, { count: number; positive: number }>();
+    for (let i = 0; i < days; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      const key = d.toISOString().split('T')[0];
+      byDay.set(key, { count: 0, positive: 0 });
+    }
+
+    for (const fb of feedbacks) {
+      const key = fb.createdAt.toISOString().split('T')[0];
+      if (byDay.has(key)) {
+        const entry = byDay.get(key)!;
+        entry.count++;
+        if (fb.commentSentiment === 'positive') entry.positive++;
+      }
+    }
+
+    return Array.from(byDay.entries()).map(([date, data]) => ({
+      date,
+      count: data.count,
+      positive: data.positive,
+      satisfactionRate: data.count > 0 ? Math.round((data.positive / data.count) * 100) : 0,
+    }));
+  }
+
   /**
    * Extraction basique de mots-clés
    */
@@ -556,19 +603,22 @@ export class FeedbackService {
    * Date de début selon la période
    */
   private getStartDateFromPeriod(period: string): Date {
-    const now = new Date();
+    const { DAYS_IN_WEEK, DAYS_IN_MONTH, DAYS_IN_QUARTER, MS_PER_DAY } = FeedbackService;
 
     switch (period) {
       case '7d':
-        return new Date(now.setDate(now.getDate() - 7));
+        return new Date(Date.now() - DAYS_IN_WEEK * MS_PER_DAY);
       case '30d':
-        return new Date(now.setDate(now.getDate() - 30));
+        return new Date(Date.now() - DAYS_IN_MONTH * MS_PER_DAY);
       case '90d':
-        return new Date(now.setDate(now.getDate() - 90));
-      case '1y':
-        return new Date(now.setFullYear(now.getFullYear() - 1));
+        return new Date(Date.now() - DAYS_IN_QUARTER * MS_PER_DAY);
+      case '1y': {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 1);
+        return d;
+      }
       default:
-        return new Date(now.setDate(now.getDate() - 30));
+        return new Date(Date.now() - DAYS_IN_MONTH * MS_PER_DAY);
     }
   }
 }

@@ -1,22 +1,38 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
+import { useCurrentUser } from '@/hooks';
+import { useOrganization } from '@/hooks';
 
 export function WorkspaceSelector() {
+  const { data: currentUser } = useCurrentUser();
+  const { data: org } = useOrganization(currentUser?.organizationId || '');
+  const isSuperAdmin = (currentUser as any)?.role === 'super_admin';
+
+  const orgName = org?.name || 'SatisClient';
+  const initials = orgName.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+  const label = isSuperAdmin ? 'Plateforme SaaS' : 'Organisation';
+
   return (
-    <button className="flex w-full items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-[#1a1a1a] p-3 transition-all hover:border-slate-300 dark:hover:border-slate-700/80 active:scale-[0.98]">
-      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-slate-900 dark:bg-white">
-        <span className="text-sm font-bold text-white dark:text-slate-900">SC</span>
+    <div className={`flex w-full items-center gap-3 rounded-xl border p-3 ${
+      isSuperAdmin
+        ? 'border-primary-200 dark:border-primary-900/60 bg-primary-50/50 dark:bg-primary-900/10'
+        : 'border-slate-200 dark:border-slate-800/60 bg-white dark:bg-[#1a1a1a]'
+    }`}>
+      <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${
+        isSuperAdmin ? 'bg-primary-600' : 'bg-slate-900 dark:bg-white'
+      }`}>
+        <span className="text-sm font-bold text-white">{initials}</span>
       </div>
       <div className="flex-1 text-left">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          Agency
-        </p>
+        {isSuperAdmin && (
+          <p className="text-[10px] font-medium uppercase tracking-wide text-primary-600 dark:text-primary-400 mb-0.5">
+            Plateforme SaaS
+          </p>
+        )}
         <p className="text-sm font-semibold text-slate-900 dark:text-white">
-          Spark Pixel Team
+          {orgName}
         </p>
       </div>
-      <ChevronDown className="h-4 w-4 text-slate-400" />
-    </button>
+    </div>
   );
 }

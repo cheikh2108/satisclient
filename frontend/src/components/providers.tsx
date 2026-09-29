@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { useState } from 'react';
+import { ToastProvider } from '@/components/ui/toast';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   // Create QueryClient inside component to avoid sharing between requests
@@ -11,10 +12,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000, // 1 minute
-            gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
-            refetchOnWindowFocus: false,
-            retry: 1,
+            staleTime: 60 * 1000,       // données fraîches pendant 1 minute
+            gcTime: 5 * 60 * 1000,      // garder en cache 5 minutes
+            retry: 1,                    // 1 retry max
+            refetchOnWindowFocus: false, // pas de refetch au focus fenêtre
+            refetchOnMount: true,
+          },
+          mutations: {
+            retry: 0, // jamais de retry sur les mutations
           },
         },
       })
@@ -27,8 +32,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultTheme="light"
         enableSystem
         disableTransitionOnChange={false}
+        enableColorScheme={false}
+        storageKey="satisclient-theme"
       >
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

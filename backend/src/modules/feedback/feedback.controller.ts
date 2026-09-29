@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  Request,
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
@@ -156,6 +157,7 @@ export class FeedbackController {
     description: 'Accès refusé',
   })
   findAll(
+    @Request() req,
     @Query('organizationId') organizationId?: string,
     @Query('siteId') siteId?: string,
     @Query('sentiment') sentiment?: string,
@@ -167,8 +169,9 @@ export class FeedbackController {
     @Query('take') take?: number,
     @Query('includeRelations') includeRelations?: boolean,
   ): Promise<FeedbackResponseDto[]> {
+    const orgId = organizationId || req.user?.organizationId;
     return this.feedbackService.findAll({
-      organizationId,
+      organizationId: orgId,
       siteId,
       sentiment,
       minRating: minRating ? +minRating : undefined,
@@ -178,6 +181,28 @@ export class FeedbackController {
       skip: skip ? +skip : undefined,
       take: take ? +take : undefined,
       includeRelations: includeRelations === true,
+    });
+  }
+
+  @Get('timeseries')
+  @UseGuards(JwtAuthGuard, RolesGuard, OrganizationGuard)
+  @Roles(UserRole.super_admin, UserRole.org_admin, UserRole.quality_manager)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Série temporelle des feedbacks par jour' })
+  @ApiQuery({ name: 'organizationId', required: false, type: String })
+  @ApiQuery({ name: 'siteId', required: false, type: String })
+  @ApiQuery({ name: 'days', required: false, type: Number, description: 'Nombre de jours (défaut: 30)' })
+  getTimeseries(
+    @Request() req,
+    @Query('organizationId') organizationId?: string,
+    @Query('siteId') siteId?: string,
+    @Query('days') days?: string,
+  ) {
+    const orgId = organizationId || req.user?.organizationId;
+    return this.feedbackService.getTimeseries({
+      organizationId: orgId,
+      siteId,
+      days: days ? +days : 30,
     });
   }
 
@@ -226,12 +251,14 @@ export class FeedbackController {
     },
   })
   getStats(
+    @Request() req,
     @Query('organizationId') organizationId?: string,
     @Query('siteId') siteId?: string,
     @Query('period') period?: string,
   ) {
+    const orgId = organizationId || req.user?.organizationId;
     return this.feedbackService.getStats({
-      organizationId,
+      organizationId: orgId,
       siteId,
       period: period || '30d',
     });

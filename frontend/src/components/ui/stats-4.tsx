@@ -5,6 +5,9 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import * as RechartsPrimitive from "recharts";
 import { ExternalLink } from "lucide-react";
+import { useFeedbackStats, useFeedbackTimeseries } from "@/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { reclamationsApi } from "@/lib/api/reclamations";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -129,51 +132,7 @@ function ChartContainer({
   );
 }
 
-// Données SatisClient avec #3a5a40
-const data = [
-  { date: "18 Mar", Feedbacks: 100, NPS: 64, Réclamations: 45 },
-  { date: "21 Mar", Feedbacks: 115, NPS: 66, Réclamations: 42 },
-  { date: "24 Mar", Feedbacks: 120, NPS: 68, Réclamations: 38 },
-  { date: "27 Mar", Feedbacks: 110, NPS: 67, Réclamations: 40 },
-  { date: "30 Mar", Feedbacks: 178, NPS: 70, Réclamations: 35 },
-  { date: "02 Apr", Feedbacks: 180, NPS: 71, Réclamations: 32 },
-  { date: "05 Apr", Feedbacks: 205, NPS: 73, Réclamations: 30 },
-  { date: "08 Apr", Feedbacks: 185, NPS: 72, Réclamations: 28 },
-  { date: "11 Apr", Feedbacks: 180, NPS: 74, Réclamations: 26 },
-  { date: "14 Apr", Feedbacks: 183, NPS: 75, Réclamations: 24 },
-  { date: "17 Apr", Feedbacks: 185, NPS: 73, Réclamations: 23 },
-  { date: "20 Apr", Feedbacks: 185, NPS: 76, Réclamations: 21 },
-  { date: "23 Apr", Feedbacks: 166, NPS: 74, Réclamations: 22 },
-  { date: "26 Apr", Feedbacks: 181, NPS: 77, Réclamations: 20 },
-  { date: "29 Apr", Feedbacks: 168, NPS: 75, Réclamations: 19 },
-];
-
-const summary = [
-  {
-    name: "Feedbacks",
-    tickerSymbol: "FB",
-    value: "3,150",
-    change: "+420",
-    percentageChange: "+15.4%",
-    changeType: "positive",
-  },
-  {
-    name: "NPS",
-    tickerSymbol: "NPS",
-    value: "75",
-    change: "+11",
-    percentageChange: "+17.2%",
-    changeType: "positive",
-  },
-  {
-    name: "Réclamations",
-    tickerSymbol: "RCL",
-    value: "19",
-    change: "-26",
-    percentageChange: "-57.8%",
-    changeType: "positive", // Baisse = positif pour réclamations !
-  },
-];
+const flatData = Array.from({ length: 15 }, (_, i) => ({ date: `J${i + 1}`, value: 0 }));
 
 const sanitizeName = (name: string) => {
   return name
@@ -183,6 +142,74 @@ const sanitizeName = (name: string) => {
 };
 
 export default function Stats4() {
+  const { data: feedbackStats, changes } = useFeedbackStats();
+  const { data: timeseriesData } = useFeedbackTimeseries(15);
+  const { data: reclamationStats } = useQuery({
+    queryKey: ['reclamations', 'stats', '30d'],
+    queryFn: () => reclamationsApi.getStats('30d'),
+  });
+  const { data: reclamationsData } = useQuery({
+    queryKey: ['reclamations', 'list-spark'],
+    queryFn: () => reclamationsApi.getAll({ pageSize: 500 }),
+  });
+
+  // Sparkline feedbacks : depuis le vrai endpoint timeseries
+  const feedbackSparkline = React.useMemo(() => {
+    if (timeseriesData && timeseriesData.length > 0) {
+      return timeseriesData.map((d, i) => ({ date: `J${i + 1}`, value: d.count }));
+    }
+    return flatData;
+  }, [timeseriesData]);
+
+  // Sparkline réclamations : depuis la liste
+  const reclamationSparkline = React.useMemo(() => {
+    const items = reclamationsData?.data ?? [];
+    return Array.from({ length: 15 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (14 - i));
+      return {
+        date: `J${i + 1}`,
+        value: items.filter((r) => new Date(r.createdAt).toDateString() === d.toDateString()).length,
+      };
+    });
+  }, [reclamationsData]);
+
+  const positive = feedbackStats?.bySentiment?.positive ?? 0;
+  const totalFB = feedbackStats?.total ?? 0;
+  const avgRating = feedbackStats?.averageRating ?? 0;
+  const totalRCL = reclamationStats?.total ?? 0;
+  const receivedRCL = reclamationStats?.byStatus?.received ?? 0;
+  const resolvedRCL = reclamationStats?.byStatus?.resolved ?? 0;
+
+  const summary = [
+    {
+      name: "Feedbacks",
+      tickerSymbol: "FB",
+      value: totalFB.toLocaleString('fr-FR'),
+      change: `+${positive}`,
+      percentageChange: avgRating ? `${avgRating.toFixed(1)}/5` : '—',
+      changeType: "positive",
+      sparkline: feedbackSparkline,
+    },
+    {
+      name: "Satisfaction",
+      tickerSymbol: "SAT",
+      value: avgRating ? `${avgRating.toFixed(1)}/5` : '—',
+      change: changes?.avgRating != null ? `${changes.avgRating > 0 ? '+' : ''}${changes.avgRating}` : '—',
+      percentageChange: "—",
+      changeType: "positive",
+      sparkline: feedbackSparkline,
+    },
+    {
+      name: "Réclamations",
+      tickerSymbol: "RCL",
+      value: totalRCL.toString(),
+      change: `${receivedRCL} reçues`,
+      percentageChange: resolvedRCL ? `${resolvedRCL} résolues` : '—',
+      changeType: "positive",
+      sparkline: reclamationSparkline,
+    },
+  ];
+
   return (
     <div className="w-full">
       <dl className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 w-full">
@@ -244,7 +271,7 @@ export default function Stats4() {
                       },
                     }}
                   >
-                    <RechartsPrimitive.AreaChart data={data}>
+                    <RechartsPrimitive.AreaChart data={item.sparkline || flatData}>
                       <defs>
                         <linearGradient
                           id={gradientId}
@@ -267,7 +294,7 @@ export default function Stats4() {
                       </defs>
                       <RechartsPrimitive.XAxis dataKey="date" hide={true} />
                       <RechartsPrimitive.Area
-                        dataKey={item.name}
+                        dataKey="value"
                         stroke={color}
                         fill={`url(#${gradientId})`}
                         fillOpacity={0.4}

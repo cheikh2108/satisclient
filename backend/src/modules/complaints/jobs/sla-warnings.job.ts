@@ -62,13 +62,13 @@ export class SlaWarningsJob {
 
       for (const complaint of upcomingSla) {
         // Vérifier si warning déjà envoyé (éviter doublons)
-        const cacheKey = `${complaint.id}-${complaint.slaDueDate.getTime()}`;
+        const cacheKey = `${complaint.id}-${complaint.slaDueDate!.getTime()}`;
         if (this.processedWarnings.has(cacheKey)) {
           continue;
         }
 
         const hoursRemaining = Math.floor(
-          (complaint.slaDueDate.getTime() - now.getTime()) / (1000 * 60 * 60),
+          (complaint.slaDueDate!.getTime() - now.getTime()) / (1000 * 60 * 60),
         );
 
         // TODO: Émettre événement pour notification email/SMS
