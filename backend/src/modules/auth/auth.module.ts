@@ -10,10 +10,13 @@ import { UsersModule } from '../users/users.module';
 import { PasswordService } from '../../common/services/password.service';
 import { RolesGuard } from './guards/roles.guard';
 import { OrganizationGuard } from './guards/organization.guard';
+import { PrismaModule } from '../../prisma/prisma.module';
+// PrismaModule est importé pour que PrismaService soit injectable dans OrganizationGuard
 
 @Module({
   imports: [
     UsersModule,
+    PrismaModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

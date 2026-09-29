@@ -20,7 +20,7 @@ export class OrganizationsService {
   /**
    * Créer une nouvelle organisation
    * - Génère automatiquement le slug depuis le nom
-   * - Initialise le trial (14 jours)
+   * - Initialise le trial (7 jours)
    * - Configure les limites selon le plan
    */
   async create(
@@ -55,9 +55,9 @@ export class OrganizationsService {
       createDto.subscriptionPlan || 'essentialiel',
     );
 
-    // Calculer la date de fin du trial (14 jours)
+    // Calculer la date de fin du trial (7 jours)
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+    trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
     try {
       const organization = await this.prisma.organization.create({

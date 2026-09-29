@@ -48,6 +48,22 @@ export class FeedbackService {
       throw new NotFoundException(`Site non trouvé (id: ${createDto.siteId})`);
     }
 
+    // Vérifier le quota mensuel de feedbacks
+    const org = site.organization;
+    if (org && org.maxMonthlyFeedbacks) {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const monthlyCount = await this.prisma.feedback.count({
+        where: { organizationId: org.id, createdAt: { gte: startOfMonth } },
+      });
+      if (monthlyCount >= org.maxMonthlyFeedbacks) {
+        throw new BadRequestException(
+          `Quota mensuel atteint: ${monthlyCount}/${org.maxMonthlyFeedbacks} feedbacks ce mois. Passez à un plan supérieur.`,
+        );
+      }
+    }
+
     if (!site.isActive) {
       throw new BadRequestException('Le site est désactivé');
     }

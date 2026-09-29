@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserRole } from '@prisma/client';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 /**
  * OrganizationGuard - Isolation Multi-tenant
@@ -31,44 +32,70 @@ import { UserRole } from '@prisma/client';
 export class OrganizationGuard implements CanActivate {
   private readonly logger = new Logger(OrganizationGuard.name);
 
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private prisma: PrismaService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    // Si pas d'utilisateur authentifié, laisser JwtAuthGuard gérer
-    if (!user) {
-      return true;
+    if (!user) return true;
+
+    // Super admin bypasse tout
+    if (user.role === UserRole.super_admin) return true;
+
+    // ── Vérification du statut de l'organisation ──────────────────────────────
+    const org = await this.prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      select: { subscriptionStatus: true, trialEndsAt: true },
+    });
+
+    if (org) {
+      if (org.subscriptionStatus === 'suspended') {
+        throw new ForbiddenException(
+          'Votre organisation est suspendue. Contactez support@satisclient.sn.',
+        );
+      }
+
+      if (org.subscriptionStatus === 'expired') {
+        throw new ForbiddenException(
+          'Votre abonnement a expiré. Renouvelez votre abonnement sur satisclient.sn.',
+        );
+      }
+
+      if (
+        org.subscriptionStatus === 'trial' &&
+        org.trialEndsAt &&
+        new Date(org.trialEndsAt) < new Date()
+      ) {
+        // Marquer automatiquement comme expiré
+        await this.prisma.organization.update({
+          where: { id: user.organizationId },
+          data: { subscriptionStatus: 'expired' },
+        }).catch(() => {});
+
+        throw new ForbiddenException(
+          'Votre essai gratuit de 7 jours est terminé. Choisissez un plan sur satisclient.sn pour continuer.',
+        );
+      }
     }
 
-    // Super admin bypasse la vérification (accès toutes organisations)
-    if (user.role === UserRole.super_admin) {
-      return true;
-    }
-
-    // Extraire organizationId de la requête (params > body > query)
+    // ── Isolation multi-tenant ─────────────────────────────────────────────────
     const resourceOrgId =
       request.params?.organizationId ||
       request.body?.organizationId ||
       request.query?.organizationId;
 
-    // Si pas d'organizationId dans la requête, laisser passer
-    // (certaines routes n'ont pas besoin de vérification)
-    if (!resourceOrgId) {
-      return true;
-    }
+    if (!resourceOrgId) return true;
 
-    // Vérifier que l'utilisateur appartient à la même organisation
     if (user.organizationId !== resourceOrgId) {
       this.logger.warn(
-        `Tentative d'accès inter-organisation refusée: ` +
-          `User ${user.id} (org: ${user.organizationId}) ` +
-          `-> Resource (org: ${resourceOrgId})`,
+        `Accès inter-organisation refusé: User ${user.id} (org: ${user.organizationId}) -> (org: ${resourceOrgId})`,
       );
-
       throw new ForbiddenException(
-        'Accès refusé: vous ne pouvez pas accéder aux ressources d\'une autre organisation',
+        'Accès refusé: ressource appartenant à une autre organisation.',
       );
     }
 

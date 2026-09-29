@@ -151,7 +151,7 @@ export class AuthService {
           email: data.email,
           subscriptionPlan: 'essentialiel',
           subscriptionStatus: 'trial',
-          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           maxSites: 1,
           maxUsers: 3,
           maxMonthlyFeedbacks: 1000,
@@ -191,6 +191,12 @@ export class AuthService {
     }
     if (org.subscriptionStatus === 'suspended' || org.subscriptionStatus === 'expired') {
       throw new BadRequestException('Organisation inactive');
+    }
+
+    // Vérifier le quota maxUsers
+    const currentUsers = await this.prisma.user.count({ where: { organizationId: registerDto.organizationId, deletedAt: null } });
+    if (currentUsers >= org.maxUsers) {
+      throw new BadRequestException(`Quota atteint: ${currentUsers}/${org.maxUsers} utilisateurs. Passez à un plan supérieur pour en ajouter.`);
     }
 
     // Valider la force du mot de passe
