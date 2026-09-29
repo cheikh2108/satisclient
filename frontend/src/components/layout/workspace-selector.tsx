@@ -19,7 +19,7 @@ export function WorkspaceSelector() {
         : 'border-slate-200 dark:border-slate-800/60 bg-white dark:bg-[#1a1a1a]'
     }`}>
       <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${
-        isSuperAdmin ? 'bg-primary-600' : 'bg-slate-900 dark:bg-white'
+        isSuperAdmin ? 'bg-primary-600' : 'bg-slate-800 dark:bg-slate-700'
       }`}>
         <span className="text-sm font-bold text-white">{initials}</span>
       </div>
