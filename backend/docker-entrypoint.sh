@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
-echo "Running Prisma migrations..."
+echo "Running Prisma db push..."
 ./node_modules/.bin/prisma db push --accept-data-loss
+echo "Running seed..."
+node prisma/seed.js || echo "Seed already done or failed, continuing..."
 echo "Starting server..."
 exec node dist/main.js
