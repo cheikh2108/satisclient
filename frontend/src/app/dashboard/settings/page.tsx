@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/toast';
-import { Settings as SettingsIcon, User, Building2, Bell, Shield, Palette, Globe } from 'lucide-react';
+import { Settings as SettingsIcon, User, Building2, Bell, Shield, Palette, Globe, CreditCard } from 'lucide-react';
 import {
   useCurrentUser,
   useOrganization,
@@ -18,12 +18,154 @@ import {
   useUpdatePreferences,
   useSessions,
   useRevokeSession,
+  useOrgUsage,
 } from '@/hooks';
+
+// ── Labels ──────────────────────────────────────────────────────────────────
+const planLabels: Record<string, string> = {
+  essentialiel: 'Essentiel',
+  pro: 'Pro',
+  business: 'Business',
+  institution: 'Institution',
+};
+
+const statusLabels: Record<string, { label: string; color: string }> = {
+  active: { label: 'Actif', color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
+  trial: { label: 'Essai gratuit', color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20' },
+  suspended: { label: 'Suspendu', color: 'text-red-600 bg-red-50 dark:bg-red-900/20' },
+  expired: { label: 'Expiré', color: 'text-slate-600 bg-slate-100 dark:bg-slate-800' },
+};
+
+// ── QuotaBar ─────────────────────────────────────────────────────────────────
+function QuotaBar({ label, used, max }: { label: string; used: number; max: number }) {
+  const pct = Math.min(Math.round((used / max) * 100), 100);
+  const color = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-[#3a5a40]';
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1">
+        <span className="text-slate-700 dark:text-slate-300 font-medium">{label}</span>
+        <span className={`font-semibold ${pct >= 90 ? 'text-red-600' : 'text-slate-600 dark:text-slate-400'}`}>
+          {used} / {max}
+        </span>
+      </div>
+      <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
+      </div>
+      {pct >= 90 && <p className="text-xs text-red-600 dark:text-red-400 mt-1">Quota presque atteint</p>}
+    </div>
+  );
+}
+
+// ── SubscriptionTab ───────────────────────────────────────────────────────────
+function SubscriptionTab({ usage, isLoading }: { usage: any; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl space-y-4 animate-pulse">
+        <div className="h-20 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+        <div className="h-40 bg-slate-100 dark:bg-slate-800 rounded-xl" />
+      </div>
+    );
+  }
+
+  if (!usage) {
+    return (
+      <div className="max-w-2xl">
+        <p className="text-sm text-slate-500 dark:text-slate-400">Impossible de charger les données d'abonnement.</p>
+      </div>
+    );
+  }
+
+  const planLabel = planLabels[usage.plan] ?? usage.plan;
+  const statusInfo = statusLabels[usage.status] ?? { label: usage.status, color: 'text-slate-600 bg-slate-100' };
+  const isTrial = usage.status === 'trial';
+
+  const upgradeSubject = encodeURIComponent(`Demande d'upgrade — plan ${planLabel}`);
+  const upgradeHref = `mailto:contact@satisclient.sn?subject=${upgradeSubject}`;
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      {/* Plan actuel */}
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800/60 p-5 space-y-3">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Plan actuel</h2>
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-2xl font-bold text-slate-900 dark:text-white">{planLabel}</span>
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusInfo.color}`}>
+            {statusInfo.label}
+          </span>
+        </div>
+        {usage.subscriptionEndsAt && (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Valide jusqu'au{' '}
+            <span className="font-medium text-slate-700 dark:text-slate-300">
+              {new Date(usage.subscriptionEndsAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </span>
+          </p>
+        )}
+      </div>
+
+      {/* Bandeau trial */}
+      {isTrial && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/10 p-4 flex items-center gap-3">
+          <CreditCard className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+            {usage.daysRemainingTrial != null
+              ? usage.daysRemainingTrial > 0
+                ? `${usage.daysRemainingTrial} jour${usage.daysRemainingTrial > 1 ? 's' : ''} restant${usage.daysRemainingTrial > 1 ? 's' : ''} dans votre essai gratuit`
+                : 'Votre essai gratuit est terminé'
+              : 'Essai gratuit en cours'}
+          </p>
+        </div>
+      )}
+
+      {/* Quotas */}
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800/60 p-5 space-y-5">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Utilisation des quotas</h2>
+        <QuotaBar
+          label="Sites"
+          used={usage.limits.sites.used}
+          max={usage.limits.sites.max}
+        />
+        <QuotaBar
+          label="Utilisateurs"
+          used={usage.limits.users.used}
+          max={usage.limits.users.max}
+        />
+        <QuotaBar
+          label="Feedbacks ce mois-ci"
+          used={usage.limits.feedbacksThisMonth.used}
+          max={usage.limits.feedbacksThisMonth.max}
+        />
+      </div>
+
+      {/* CTA upgrade */}
+      {(usage.plan === 'essentialiel' || usage.plan === 'pro' || isTrial) && (
+        <div className="rounded-xl border border-[#3a5a40]/30 bg-[#3a5a40]/5 dark:bg-[#3a5a40]/10 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              {usage.plan === 'pro' ? 'Passez à Business' : 'Passez à Pro ou Business'}
+            </p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+              Augmentez vos limites et débloquez toutes les fonctionnalités avancées.
+            </p>
+          </div>
+          <a
+            href={upgradeHref}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3a5a40] text-white text-sm font-medium hover:bg-[#2e4a33] transition-colors whitespace-nowrap"
+          >
+            <CreditCard className="h-4 w-4" />
+            {usage.plan === 'pro' ? 'Passer à Business' : 'Passer à Pro / Business'}
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
   const { data: currentUser } = useCurrentUser();
   const { data: currentOrg } = useOrganization(currentUser?.organizationId ?? '');
+  const { data: orgUsage, isLoading: usageLoading } = useOrgUsage();
   const { addToast } = useToast();
 
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -131,6 +273,7 @@ export default function SettingsPage() {
     { id: 'security', label: 'Sécurité', icon: Shield },
     { id: 'appearance', label: 'Apparence', icon: Palette },
     { id: 'localization', label: 'Localisation', icon: Globe },
+    { id: 'subscription', label: 'Abonnement', icon: CreditCard },
   ];
 
   return (
@@ -454,6 +597,11 @@ export default function SettingsPage() {
               </Button>
             </div>
           </div>
+        )}
+
+        {/* Subscription Tab */}
+        {activeTab === 'subscription' && (
+          <SubscriptionTab usage={orgUsage} isLoading={usageLoading} />
         )}
 
         {/* Localization Tab */}

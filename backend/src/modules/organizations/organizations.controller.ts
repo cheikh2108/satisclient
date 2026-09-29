@@ -11,6 +11,7 @@ import {
   ParseUUIDPipe,
   HttpCode,
   HttpStatus,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -36,6 +37,13 @@ import { UserRole } from '@prisma/client';
 @ApiBearerAuth('JWT')
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
+
+  @Get('me/usage')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Usage et abonnement de l\'organisation courante' })
+  async getMyUsage(@Request() req) {
+    return this.organizationsService.getUsage(req.user.organizationId);
+  }
 
   @Post()
   @Roles(UserRole.super_admin)

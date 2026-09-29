@@ -323,6 +323,50 @@ export class OrganizationsService {
     return (org as any)._count.users < org.maxUsers;
   }
 
+  /**
+   * Retourner l'usage et les infos d'abonnement d'une organisation
+   */
+  async getUsage(organizationId: string) {
+    const [org, sitesCount, usersCount, feedbacksThisMonth] = await Promise.all([
+      this.prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: {
+          name: true, subscriptionPlan: true, subscriptionStatus: true,
+          trialEndsAt: true, maxSites: true, maxUsers: true, maxMonthlyFeedbacks: true,
+          subscriptionStartsAt: true, subscriptionEndsAt: true,
+        },
+      }),
+      this.prisma.site.count({ where: { organizationId } }),
+      this.prisma.user.count({ where: { organizationId, deletedAt: null } }),
+      this.prisma.feedback.count({
+        where: {
+          organizationId,
+          createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
+        },
+      }),
+    ]);
+
+    if (!org) throw new NotFoundException('Organisation non trouvée');
+
+    const daysRemainingTrial = org.trialEndsAt
+      ? Math.max(0, Math.ceil((new Date(org.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      : null;
+
+    return {
+      plan: org.subscriptionPlan,
+      status: org.subscriptionStatus,
+      trialEndsAt: org.trialEndsAt,
+      daysRemainingTrial,
+      limits: {
+        sites: { used: sitesCount, max: org.maxSites },
+        users: { used: usersCount, max: org.maxUsers },
+        feedbacksThisMonth: { used: feedbacksThisMonth, max: org.maxMonthlyFeedbacks },
+      },
+      subscriptionStartsAt: org.subscriptionStartsAt,
+      subscriptionEndsAt: org.subscriptionEndsAt,
+    };
+  }
+
   // ===========================
   // HELPERS PRIVÉS
   // ===========================

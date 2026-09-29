@@ -2,6 +2,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { organizationsApi, type OrganizationFilters } from '@/lib/api/organizations';
 import type { CreateOrganizationDto, UpdateOrganizationDto } from '@/types/api';
 import { useToast } from '@/components/ui/toast';
+import { apiClient } from '@/lib/api/client';
+
+export const useOrgUsage = () =>
+  useQuery({
+    queryKey: ['org', 'usage'],
+    queryFn: () => apiClient.get('/organizations/me/usage').then(r => r.data),
+    staleTime: 60 * 1000,
+  });
 
 export const orgKeys = {
   all: ['organizations'] as const,
