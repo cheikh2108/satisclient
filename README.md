@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-En%20développement-yellow.svg)](<>)
 
-> **✨ État actuel:** Infrastructure technique complète avec PostgreSQL natif, sécurité robuste (JWT, Encryption, Rate limiting), 15 tables BDD créées avec données de test. Backend NestJS et Frontend Next.js configurés et fonctionnels. Développement des modules métier en cours.
+> **État actuel:** Application déployable avec backend NestJS, frontend Next.js, PostgreSQL/Prisma, authentification JWT, multi-tenant, gestion des réclamations, feedbacks, analytics, notifications et administration plateforme.
 
 ## 📋 À propos
 
@@ -45,20 +45,20 @@ SatisClient transforme chaque avis, réclamation ou suggestion en information ex
 - Comparaisons multisites
 - Exports PDF, Excel, CSV
 
-### 🔔 Notifications multi-canaux
+### 🔔 Notifications
 
-- Email (Nodemailer)
-- SMS (Twilio / Africa's Talking)
-- WhatsApp (Twilio API)
-- Notifications in-app
+- Notifications in-app persistantes par utilisateur
+- Préférences par canal et par type d'événement
+- Notifications de nouveaux feedbacks et de nouvelles réclamations pour les responsables d'organisation
+- Préparation des canaux email, SMS et WhatsApp
 
 ## 🏗️ Architecture technique
 
 ### Stack (V1)
 
 - **Backend:** NestJS (Node.js + TypeScript)
-- **Frontend:** Next.js 14 (React + TypeScript + App Router)
-- **Database:** PostgreSQL 18 natif Windows
+- **Frontend:** Next.js 16 (React + TypeScript + App Router)
+- **Database:** PostgreSQL 16 via Docker Compose
 - **ORM:** Prisma 5
 - **Package Manager:** npm (Node.js natif)
 - **UI:** Shadcn/ui + Tailwind CSS
@@ -76,8 +76,9 @@ satisclient/
 │   │   ├── config/            # Configuration
 │   │   └── prisma/            # Service Prisma
 │   ├── prisma/
-│   │   ├── schema.prisma     # Schéma BDD (15 tables)
-│   │   └── seed.ts           # Données de test
+│   │   ├── schema.prisma                 # Schéma BDD multi-tenant
+│   │   ├── bootstrap-super-admin.js      # Bootstrap production sans données de démo
+│   │   └── seed.ts                       # Point d'entrée historique de compatibilité
 │   └── .env                   # Variables backend
 ├── frontend/                   # Application Next.js
 │   ├── src/
@@ -109,7 +110,7 @@ satisclient/
 - **PostgreSQL 14+** natif Windows/Mac/Linux
 - **Git**
 
-> **Note V1:** Redis, Email, SMS, AI ne sont pas requis pour le développement local.
+> **Note:** Redis, les fournisseurs email/SMS et l'IA sont optionnels pour le démarrage local.
 
 ### Installation
 
@@ -118,8 +119,9 @@ satisclient/
 git clone https://github.com/cheikh2108/satisclient.git
 cd satisclient
 
-# 2. Installer les dépendances
-npm install
+# 2. Installer les dépendances du backend et du frontend
+cd backend && npm install
+cd ../frontend && npm install
 
 # 3. Configurer PostgreSQL
 # Créer l'utilisateur et la base de données :
@@ -127,14 +129,15 @@ npm install
 # CREATE DATABASE satisclient_dev OWNER satisclient;
 
 # 4. Configurer l'environnement
-# Le fichier backend/.env existe déjà avec les bonnes valeurs
-# Si besoin, voir .env.example pour référence
+# Copier les fichiers .env.example disponibles et renseigner les secrets locaux
 
 # 5. Générer le client Prisma
 cd backend
 npx prisma generate
 
-# 6. Initialiser le bootstrap de production du compte super admin
+# 6. Initialiser la base et le compte super admin
+npx prisma db push
+npm run prisma:seed
 # Variables attendues: SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD
 # Optionnel: SUPER_ADMIN_ORGANIZATION_NAME
 
@@ -149,11 +152,38 @@ npm run dev
 - **API Backend:** http://localhost:3001
 - **API Docs (Swagger):** http://localhost:3001/api/docs
 
-**Compte super admin d’environnement:**
+**Compte super admin d'environnement:**
 
 - Configuré via les variables `SUPER_ADMIN_EMAIL` et `SUPER_ADMIN_PASSWORD`
 - Le compte est créé automatiquement avec l’organisation `SatisClient Platform`
 - Aucune donnée de démonstration n’est injectée dans le bootstrap de production
+
+### Multi-tenant et rôles
+
+- `super_admin`: administration de la plateforme, sans accès aux notifications des organisations clientes
+- `org_admin`: administration d'une organisation cliente
+- `quality_manager` et `service_manager`: responsables opérationnels
+- `agent` et `client`: accès limités selon leur organisation
+
+L'organisation `SatisClient Platform` est une organisation technique marquée comme plateforme. Elle est exclue des statistiques commerciales, des listes clients et des quotas des organisations clientes.
+
+### Variables de production
+
+Le service `backend` doit recevoir ces variables dans Dokploy :
+
+```env
+POSTGRES_PASSWORD=...
+JWT_SECRET=...
+JWT_REFRESH_SECRET=...
+ENCRYPTION_KEY=...
+BACKEND_URL=https://api.example.com
+FRONTEND_URL=https://app.example.com
+SUPER_ADMIN_EMAIL=admin@example.com
+SUPER_ADMIN_PASSWORD=...
+SUPER_ADMIN_ORGANIZATION_NAME=SatisClient Platform
+```
+
+Au démarrage Docker, l'entrypoint exécute `prisma db push`, puis `bootstrap-super-admin.js`. Si le bootstrap échoue, le conteneur backend s'arrête afin que l'erreur apparaisse dans les logs Dokploy.
 
 ## 📚 Documentation
 
@@ -169,32 +199,33 @@ npm run dev
 
 ## 🎯 Roadmap
 
-### Phase 1: MVP Essentiel (En cours - 6 semaines)
+### Phase 1: MVP Essentiel
 
 - [x] Architecture définie
 - [x] Schéma base de données (15 tables)
 - [x] Setup projet NestJS + Next.js
 - [x] Sécurité (JWT, Encryption, Rate limiting, Brute force protection)
 - [x] PostgreSQL + Prisma configuré
-- [x] Base de données avec données de test
-- [ ] Module Auth (JWT + RBAC) - en cours
-- [ ] Module Organizations (multi-tenant) - en cours
-- [ ] Module Feedback (notation + commentaires)
-- [ ] QR Codes génération
-- [ ] Dashboard basique
-- [ ] Exports PDF/Excel
+- [x] Base de données Prisma multi-tenant
+- [x] Module Auth (JWT + RBAC)
+- [x] Module Organizations
+- [x] Module Feedback et réclamations
+- [x] QR Codes
+- [x] Dashboard et KPI plateforme/client
+- [x] Notifications in-app et préférences
+- [x] Déploiement Docker/Dokploy
 
-### Phase 2: Formule Pro (6-8 semaines)
+### Phase 2: Extensions produit
 
-- [ ] Module Complaints complet (workflow)
-- [ ] SLA tracking + alertes
-- [ ] Système d'affectation
-- [ ] Notifications email/SMS/WhatsApp
+- [x] Module Complaints complet (workflow)
+- [x] SLA tracking et alertes applicatives
+- [x] Système d'affectation
+- [ ] Notifications email/SMS/WhatsApp réelles
 - [ ] Surveys dynamiques
 - [ ] Analytics avancées
 - [ ] Redis (Cache & Queues)
 
-### Phase 3: Formule Business (6-8 semaines)
+### Phase 3: Fonctionnalités avancées
 
 - [ ] Analyse sentiment IA (OpenAI)
 - [ ] Escalades automatiques
@@ -257,21 +288,22 @@ npm run test:cov
 
 ## 📦 Déploiement
 
-### Production (Dokploy)
+### Production (Docker/Dokploy)
 
 Le déploiement en production se fait via **Dokploy** sur VPS.
 
-```bash
-# Build backend
-cd backend
-npm run build
+Le déploiement recommandé utilise [docker-compose.yml](docker-compose.yml) dans Dokploy. Les services sont :
 
-# Build frontend
-cd frontend
-npm run build
+- `postgres`: base PostgreSQL persistante via le volume `postgres_data` ;
+- `backend`: API NestJS, migrations/synchronisation Prisma et bootstrap du super admin ;
+- `frontend`: application Next.js ;
+- `uploads`: stockage persistant des fichiers via le volume `uploads_data`.
 
-# Démarrage production
-npm run start:prod
+Après chaque déploiement, vérifier les logs du backend. Le message attendu est :
+
+```text
+Super admin prêt: admin@example.com | organisation: SatisClient Platform
+Starting server...
 ```
 
 Voir [Guide de déploiement Dokploy](docs/DEPLOYMENT.md) pour plus de détails.
