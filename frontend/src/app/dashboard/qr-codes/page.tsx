@@ -125,7 +125,7 @@ export default function QRCodesPage() {
 
   const handleCreate = () => {
     if (!formType || !formSiteId) {
-      addToast({ type: 'error', title: 'Veuillez remplir tous les champs' });
+      addToast({ type: 'error', title: 'Type et établissement sont obligatoires' });
       return;
     }
     createQRCode.mutate(
@@ -470,9 +470,8 @@ export default function QRCodesPage() {
             onChange={(val) => setFormSiteId(val)}
           />
           <Input
-            label="URL de destination"
-            placeholder="https://..."
-            required
+            label="URL de destination (optionnel)"
+            placeholder="Laisser vide pour le formulaire SatisClient"
             value={formUrl}
             onChange={(e) => setFormUrl(e.target.value)}
           />
