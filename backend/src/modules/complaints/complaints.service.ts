@@ -50,74 +50,101 @@ export class ComplaintsService {
       throw new BadRequestException('organizationId ne correspond pas au site');
     }
 
-    const ticketNumber = await this.generateTicketNumber(createDto.organizationId);
     const slaDueDate = this.calculateSLA(createDto.priority);
+    const maxAttempts = 5;
 
     try {
-      const complaint = await this.prisma.complaint.create({
-        data: {
-          organizationId: createDto.organizationId,
-          siteId: createDto.siteId,
-          ticketNumber,
-          title: createDto.title,
-          description: createDto.description,
-          category: createDto.category,
-          subcategory: createDto.subcategory,
-          priority: createDto.priority,
-          status: ComplaintStatus.received,
-          incidentDate: createDto.incidentDate ? new Date(createDto.incidentDate) : null,
-          slaDueDate,
-          complainantUserId: createDto.complainantUserId,
-          isAnonymous: createDto.isAnonymous ?? false,
-          complainantName: createDto.complainantName,
-          complainantEmail: createDto.complainantEmail,
-          complainantPhone: createDto.complainantPhone,
-          attachments: createDto.attachments || [],
-          relatedFeedbackId: createDto.relatedFeedbackId,
-          source: createDto.source || 'web',
-          ipAddress: createDto.ipAddress,
-        },
-        include: {
-          site: { select: { id: true, name: true, code: true } },
-          organization: { select: { id: true, name: true } },
-        },
-      });
+      // ticket_number est unique globalement : régénérer en cas de collision (multi-org / concurrence)
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const ticketNumber = await this.generateTicketNumber();
 
-      await this.createHistory({
-        complaintId: complaint.id,
-        organizationId: complaint.organizationId,
-        action: 'created',
-        newStatus: ComplaintStatus.received,
-        comment: 'Réclamation créée',
-        userId: createDto.complainantUserId,
-      });
+        try {
+          const complaint = await this.prisma.complaint.create({
+            data: {
+              organizationId: createDto.organizationId,
+              siteId: createDto.siteId,
+              ticketNumber,
+              title: createDto.title,
+              description: createDto.description,
+              category: createDto.category,
+              subcategory: createDto.subcategory,
+              priority: createDto.priority,
+              status: ComplaintStatus.received,
+              incidentDate: createDto.incidentDate ? new Date(createDto.incidentDate) : null,
+              slaDueDate,
+              complainantUserId: createDto.complainantUserId,
+              isAnonymous: createDto.isAnonymous ?? false,
+              complainantName: createDto.complainantName,
+              complainantEmail: createDto.complainantEmail,
+              complainantPhone: createDto.complainantPhone,
+              attachments: createDto.attachments || [],
+              relatedFeedbackId: createDto.relatedFeedbackId,
+              source: createDto.source || 'web',
+              ipAddress: createDto.ipAddress,
+            },
+            include: {
+              site: { select: { id: true, name: true, code: true } },
+              organization: { select: { id: true, name: true } },
+            },
+          });
 
-      this.logger.log({
-        event: 'complaint.created',
-        complaintId: complaint.id,
-        ticketNumber: complaint.ticketNumber,
-        organizationId: complaint.organizationId,
-        priority: complaint.priority,
-      });
+          await this.createHistory({
+            complaintId: complaint.id,
+            organizationId: complaint.organizationId,
+            action: 'created',
+            newStatus: ComplaintStatus.received,
+            comment: 'Réclamation créée',
+            userId: createDto.complainantUserId,
+          });
 
-      // Émettre événement (async)
-      this.eventEmitter.emit(
-        'complaint.created',
-        new ComplaintCreatedEvent(
-          complaint.id,
-          complaint.ticketNumber,
-          complaint.organizationId,
-          complaint.siteId,
-          complaint.title,
-          complaint.priority,
-          complaint.slaDueDate!,
-          complaint.complainantEmail || undefined,
-          complaint.complainantName || undefined,
-        ),
+          this.logger.log({
+            event: 'complaint.created',
+            complaintId: complaint.id,
+            ticketNumber: complaint.ticketNumber,
+            organizationId: complaint.organizationId,
+            priority: complaint.priority,
+          });
+
+          this.eventEmitter.emit(
+            'complaint.created',
+            new ComplaintCreatedEvent(
+              complaint.id,
+              complaint.ticketNumber,
+              complaint.organizationId,
+              complaint.siteId,
+              complaint.title,
+              complaint.priority,
+              complaint.slaDueDate!,
+              complaint.complainantEmail || undefined,
+              complaint.complainantName || undefined,
+            ),
+          );
+
+          return plainToInstance(ComplaintResponseDto, complaint);
+        } catch (error: any) {
+          const isUniqueTicketConflict =
+            error?.code === 'P2002' &&
+            (Array.isArray(error?.meta?.target)
+              ? error.meta.target.includes('ticket_number')
+              : String(error?.meta?.target || '').includes('ticket_number'));
+
+          if (isUniqueTicketConflict && attempt < maxAttempts) {
+            this.logger.warn({
+              event: 'complaint.create.ticket_collision',
+              ticketNumber,
+              attempt,
+            });
+            continue;
+          }
+
+          throw error;
+        }
+      }
+
+      throw new BadRequestException(
+        'Impossible de générer un numéro de ticket unique. Réessayez.',
       );
-
-      return plainToInstance(ComplaintResponseDto, complaint);
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error({ event: 'complaint.create.error', error: error.message });
       throw error;
     }
@@ -530,20 +557,28 @@ export class ComplaintsService {
   }
 
   // HELPERS
-  private async generateTicketNumber(organizationId: string): Promise<string> {
+  /**
+   * Génère un ticket unique globalement (contrainte @unique sur ticket_number).
+   * Format: COMP-YYYY-NNNNNN
+   */
+  private async generateTicketNumber(): Promise<string> {
     const year = new Date().getFullYear();
     const prefix = `COMP-${year}-`;
 
+    // Compteur global (pas par org) : ticket_number est unique sur toute la table
     const lastComplaint = await this.prisma.complaint.findFirst({
-      where: { organizationId, ticketNumber: { startsWith: prefix } },
-      orderBy: { createdAt: 'desc' },
+      where: { ticketNumber: { startsWith: prefix } },
+      orderBy: { ticketNumber: 'desc' },
       select: { ticketNumber: true },
     });
 
     let nextNumber = 1;
-    if (lastComplaint) {
-      const lastNumber = parseInt(lastComplaint.ticketNumber.split('-')[2]);
-      nextNumber = lastNumber + 1;
+    if (lastComplaint?.ticketNumber) {
+      const suffix = lastComplaint.ticketNumber.slice(prefix.length);
+      const lastNumber = parseInt(suffix, 10);
+      if (!Number.isNaN(lastNumber)) {
+        nextNumber = lastNumber + 1;
+      }
     }
 
     return `${prefix}${nextNumber.toString().padStart(6, '0')}`;
