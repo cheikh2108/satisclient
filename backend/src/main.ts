@@ -12,6 +12,7 @@ import { SanitizePipe } from './common/pipes/sanitize.pipe';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule, {
+    rawBody: true,
     logger: ['error', 'warn', 'log'],
   });
 
@@ -112,7 +113,8 @@ async function bootstrap() {
   if (isDevelopment || configService.get('ENABLE_SWAGGER') === 'true') {
     const config = new DocumentBuilder()
       .setTitle('SatisClient API')
-      .setDescription(`
+      .setDescription(
+        `
         API REST de la plateforme SatisClient
 
         ## Sécurité
@@ -126,7 +128,8 @@ async function bootstrap() {
         ## Environnement
         - ${nodeEnv.toUpperCase()}
         - Version: 1.0.0
-      `)
+      `,
+      )
       .setVersion('1.0')
       .addBearerAuth(
         {
@@ -161,7 +164,11 @@ async function bootstrap() {
       },
     });
 
-    logger.log('📚 Swagger Documentation: http://localhost:' + (configService.get('BACKEND_PORT') || 3001) + '/api/docs');
+    logger.log(
+      '📚 Swagger Documentation: http://localhost:' +
+        (configService.get('BACKEND_PORT') || 3001) +
+        '/api/docs',
+    );
   }
 
   // ============================================
@@ -198,7 +205,9 @@ async function bootstrap() {
   `);
 
   if (!encryptionKey) {
-    logger.warn('⚠️  Generate ENCRYPTION_KEY with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+    logger.warn(
+      "⚠️  Generate ENCRYPTION_KEY with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
+    );
   }
 
   if (isDevelopment) {

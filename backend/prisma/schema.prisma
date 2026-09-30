@@ -106,6 +106,14 @@ enum NotificationStatus {
   bounced
 }
 
+enum PaymentStatus {
+  pending
+  succeeded
+  failed
+  cancelled
+  refunded
+}
+
 // ============================================
 // MODELS
 // ============================================
@@ -129,6 +137,9 @@ model Organization {
   trialEndsAt           DateTime?             @map("trial_ends_at")
   subscriptionStartsAt  DateTime?             @map("subscription_starts_at")
   subscriptionEndsAt    DateTime?             @map("subscription_ends_at")
+  paymentProvider       String?               @map("payment_provider")
+  providerCustomerId    String?               @map("provider_customer_id")
+  providerSubscriptionId String?              @map("provider_subscription_id")
 
   // Limits
   maxSites             Int       @default(1) @map("max_sites")
@@ -155,8 +166,45 @@ model Organization {
   notifications      Notification[]
   qrCodes            QrCode[]
   auditLogs          AuditLog[]
+  payments           Payment[]
 
   @@map("organizations")
+}
+
+model Payment {
+  id                  String        @id @default(uuid())
+  organizationId      String        @map("organization_id")
+  provider            String
+  reference           String        @unique
+  providerTransactionId String?     @map("provider_transaction_id")
+  status              PaymentStatus @default(pending)
+  amount              Int
+  currency            String        @default("XOF")
+  plan                SubscriptionPlan
+  checkoutUrl         String?       @map("checkout_url")
+  metadata            Json          @default("{}")
+  paidAt              DateTime?     @map("paid_at")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@index([providerTransactionId])
+  @@map("payments")
+}
+
+model PaymentWebhookEvent {
+  id          String   @id @default(uuid())
+  provider    String
+  eventKey    String   @unique @map("event_key")
+  eventType   String   @map("event_type")
+  payload     Json
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([provider, eventType])
+  @@map("payment_webhook_events")
 }
 
 model User {

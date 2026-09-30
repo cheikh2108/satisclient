@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -36,6 +36,8 @@ services:
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL}
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD}
       SUPER_ADMIN_ORGANIZATION_NAME: ${SUPER_ADMIN_ORGANIZATION_NAME:-SatisClient Platform}
+      DEXPAY_API_KEY: ${DEXPAY_API_KEY}
+      DEXPAY_API_SECRET: ${DEXPAY_API_SECRET}
       STORAGE_TYPE: local
       STORAGE_PATH: /app/uploads
     volumes:

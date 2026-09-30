@@ -181,9 +181,22 @@ FRONTEND_URL=https://app.example.com
 SUPER_ADMIN_EMAIL=admin@example.com
 SUPER_ADMIN_PASSWORD=...
 SUPER_ADMIN_ORGANIZATION_NAME=SatisClient Platform
+DEXPAY_API_KEY=pk_test_...
+DEXPAY_API_SECRET=sk_test_...
 ```
 
 Au démarrage Docker, l'entrypoint exécute `prisma db push`, puis `bootstrap-super-admin.js`. Si le bootstrap échoue, le conteneur backend s'arrête afin que l'erreur apparaisse dans les logs Dokploy.
+
+### Paiements DexPay
+
+Les organisations peuvent payer ou renouveler leur formule mensuelle depuis l'onglet **Abonnement**. Le backend crée une checkout session DexPay et redirige l'organisation vers la page de paiement hébergée.
+
+- Les clés DexPay restent uniquement dans le service `backend`.
+- Le paiement est validé exclusivement par webhook signé HMAC-SHA256.
+- Un paiement confirmé active l'organisation pour 30 jours.
+- Une organisation expirée peut encore ouvrir le checkout pour renouveler son accès.
+- Utiliser les clés `pk_test_*` et `sk_test_*` en sandbox, puis les clés `pk_live_*` et `sk_live_*` en production.
+- Webhook attendu : `POST /api/billing/dexpay/webhook`.
 
 ## 📚 Documentation
 

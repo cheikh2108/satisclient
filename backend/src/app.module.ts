@@ -20,6 +20,7 @@ import { QrCodesModule } from './modules/qr-codes/qr-codes.module';
 import { FilesModule } from './modules/files/files.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { AuditModule } from './modules/audit/audit.module';
     FilesModule,
     ReportsModule,
     AuditModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

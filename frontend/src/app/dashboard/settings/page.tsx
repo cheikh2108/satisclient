@@ -28,6 +28,7 @@ import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
   useOrgUsage,
+  useCreateBillingCheckout,
 } from "@/hooks";
 
 // ── Labels ──────────────────────────────────────────────────────────────────
@@ -105,6 +106,7 @@ function SubscriptionTab({
   usage: any;
   isLoading: boolean;
 }) {
+  const createCheckout = useCreateBillingCheckout();
   if (isLoading) {
     return (
       <div className="max-w-2xl space-y-4 animate-pulse">
@@ -217,15 +219,27 @@ function SubscriptionTab({
               avancées.
             </p>
           </div>
-          <a
-            href={upgradeHref}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3a5a40] text-white text-sm font-medium hover:bg-[#2e4a33] transition-colors whitespace-nowrap"
-          >
-            <CreditCard className="h-4 w-4" />
-            {usage.plan === "pro"
-              ? "Passer à Business"
-              : "Passer à Pro / Business"}
-          </a>
+          {usage.plan === "essentialiel" || usage.plan === "pro" ? (
+            <button
+              type="button"
+              onClick={() => createCheckout.mutate()}
+              disabled={createCheckout.isPending}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3a5a40] text-white text-sm font-medium hover:bg-[#2e4a33] transition-colors whitespace-nowrap disabled:opacity-60"
+            >
+              <CreditCard className="h-4 w-4" />
+              {createCheckout.isPending
+                ? "Préparation..."
+                : "Payer / renouveler"}
+            </button>
+          ) : (
+            <a
+              href={upgradeHref}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3a5a40] text-white text-sm font-medium hover:bg-[#2e4a33] transition-colors whitespace-nowrap"
+            >
+              <CreditCard className="h-4 w-4" />
+              Demander un devis
+            </a>
+          )}
         </div>
       )}
     </div>
