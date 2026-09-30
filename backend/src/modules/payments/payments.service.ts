@@ -162,8 +162,8 @@ export class PaymentsService {
   }
 
   private baseUrl(): string {
-    return this.config.get('NODE_ENV') === 'production'
-      ? 'https://api.dexpay.africa/api/v1'
-      : 'https://api-sandbox.dexpay.africa/api/v1';
+    return this.config.get<string>('DEXPAY_SANDBOX', 'true') === 'true'
+      ? 'https://api-sandbox.dexpay.africa/api/v1'
+      : 'https://api.dexpay.africa/api/v1';
   }
 }

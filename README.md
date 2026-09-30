@@ -183,6 +183,7 @@ SUPER_ADMIN_PASSWORD=...
 SUPER_ADMIN_ORGANIZATION_NAME=SatisClient Platform
 DEXPAY_API_KEY=pk_test_...
 DEXPAY_API_SECRET=sk_test_...
+DEXPAY_SANDBOX=true
 ```
 
 Au démarrage Docker, l'entrypoint exécute `prisma db push`, puis `bootstrap-super-admin.js`. Si le bootstrap échoue, le conteneur backend s'arrête afin que l'erreur apparaisse dans les logs Dokploy.
@@ -196,6 +197,7 @@ Les organisations peuvent payer ou renouveler leur formule mensuelle depuis l'on
 - Un paiement confirmé active l'organisation pour 30 jours.
 - Une organisation expirée peut encore ouvrir le checkout pour renouveler son accès.
 - Utiliser les clés `pk_test_*` et `sk_test_*` en sandbox, puis les clés `pk_live_*` et `sk_live_*` en production.
+- Régler `DEXPAY_SANDBOX=true` avec les clés de test, puis `DEXPAY_SANDBOX=false` avec les clés de production.
 - Webhook attendu : `POST /api/billing/dexpay/webhook`.
 
 ## 📚 Documentation

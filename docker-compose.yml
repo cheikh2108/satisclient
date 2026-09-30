@@ -38,6 +38,7 @@ services:
       SUPER_ADMIN_ORGANIZATION_NAME: ${SUPER_ADMIN_ORGANIZATION_NAME:-SatisClient Platform}
       DEXPAY_API_KEY: ${DEXPAY_API_KEY}
       DEXPAY_API_SECRET: ${DEXPAY_API_SECRET}
+      DEXPAY_SANDBOX: ${DEXPAY_SANDBOX:-true}
       STORAGE_TYPE: local
       STORAGE_PATH: /app/uploads
     volumes:
