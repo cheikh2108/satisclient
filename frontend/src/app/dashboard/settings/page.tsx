@@ -27,8 +27,6 @@ import {
   useUpdatePreferences,
   useNotificationPreferences,
   useUpdateNotificationPreferences,
-  useSessions,
-  useRevokeSession,
   useOrgUsage,
 } from "@/hooks";
 
@@ -267,8 +265,6 @@ export default function SettingsPage() {
   const updatePrefs = useUpdatePreferences();
   const { data: notificationPreferences } = useNotificationPreferences();
   const updateNotificationPreferences = useUpdateNotificationPreferences();
-  const { data: sessions } = useSessions();
-  const revokeSession = useRevokeSession();
 
   // Formulaire profil (React Hook Form)
   const profileForm = useForm({
@@ -689,45 +685,6 @@ export default function SettingsPage() {
                     </p>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="pt-6 border-t border-slate-200 dark:border-slate-800/40">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-                Sessions actives
-              </h2>
-              <div className="space-y-3">
-                {sessions && sessions.length > 0 ? (
-                  sessions.map((session) => (
-                    <div
-                      key={session.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-[#1a1a1a]"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">
-                          Session active
-                        </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Expire le{" "}
-                          {new Date(session.expiresAt).toLocaleDateString(
-                            "fr-FR",
-                          )}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => revokeSession.mutate(session.id)}
-                        disabled={revokeSession.isPending}
-                        className="text-xs text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
-                      >
-                        Révoquer
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Aucune session active trouvée.
-                  </p>
-                )}
               </div>
             </div>
 
