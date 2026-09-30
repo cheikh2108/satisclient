@@ -37,7 +37,7 @@ export class NotificationsController {
   @Get()
   @ApiOperation({
     summary: 'Liste notifications utilisateur',
-    description: 'Récupère les notifications de l\'utilisateur connecté avec filtres',
+    description: "Récupère les notifications de l'utilisateur connecté avec filtres",
   })
   @ApiQuery({
     name: 'channel',
@@ -119,7 +119,7 @@ export class NotificationsController {
   @Get('preferences')
   @ApiOperation({
     summary: 'Préférences notifications',
-    description: 'Récupère les préférences de notifications de l\'utilisateur',
+    description: "Récupère les préférences de notifications de l'utilisateur",
   })
   @ApiResponse({
     status: 200,

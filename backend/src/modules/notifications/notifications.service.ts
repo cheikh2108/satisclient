@@ -44,6 +44,41 @@ export class NotificationsService {
     return plainToInstance(NotificationResponseDto, notification);
   }
 
+  async notifyOrganizationManagers(data: {
+    organizationId: string;
+    notificationType: string;
+    subject: string;
+    body: string;
+    relatedEntityType?: string;
+    relatedEntityId?: string;
+  }): Promise<void> {
+    const recipients = await this.prisma.user.findMany({
+      where: {
+        organizationId: data.organizationId,
+        deletedAt: null,
+        status: 'active',
+        role: { in: ['org_admin', 'quality_manager', 'service_manager'] },
+      },
+      select: { id: true, email: true },
+    });
+
+    await Promise.all(
+      recipients.map((recipient) =>
+        this.create({
+          organizationId: data.organizationId,
+          userId: recipient.id,
+          recipientEmail: recipient.email,
+          notificationType: data.notificationType,
+          channel: NotificationChannel.in_app,
+          subject: data.subject,
+          body: data.body,
+          relatedEntityType: data.relatedEntityType,
+          relatedEntityId: data.relatedEntityId,
+        }),
+      ),
+    );
+  }
+
   /**
    * Liste des notifications d'un utilisateur
    */

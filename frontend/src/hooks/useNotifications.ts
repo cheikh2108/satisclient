@@ -1,13 +1,18 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { notificationsApi, type NotificationFilters } from '@/lib/api/notifications';
-import { useToast } from '@/components/ui/toast';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  notificationsApi,
+  type NotificationFilters,
+  type NotificationPreferences,
+} from "@/lib/api/notifications";
+import { useToast } from "@/components/ui/toast";
 
 export const notifKeys = {
-  all: ['notifications'] as const,
-  lists: () => [...notifKeys.all, 'list'] as const,
-  list: (filters?: NotificationFilters) => [...notifKeys.lists(), filters] as const,
-  unread: () => [...notifKeys.all, 'unread'] as const,
-  stats: () => [...notifKeys.all, 'stats'] as const,
+  all: ["notifications"] as const,
+  lists: () => [...notifKeys.all, "list"] as const,
+  list: (filters?: NotificationFilters) =>
+    [...notifKeys.lists(), filters] as const,
+  unread: () => [...notifKeys.all, "unread"] as const,
+  stats: () => [...notifKeys.all, "stats"] as const,
 };
 
 export const useNotifications = (filters?: NotificationFilters) =>
@@ -31,6 +36,36 @@ export const useNotificationStats = () =>
     staleTime: 30 * 1000, // données temps-réel : 30 sec
   });
 
+export const useNotificationPreferences = () =>
+  useQuery({
+    queryKey: [...notifKeys.all, "preferences"],
+    queryFn: () => notificationsApi.getPreferences(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+export const useUpdateNotificationPreferences = () => {
+  const queryClient = useQueryClient();
+  const { addToast } = useToast();
+
+  return useMutation({
+    mutationFn: (preferences: NotificationPreferences) =>
+      notificationsApi.updatePreferences(preferences),
+    onSuccess: (preferences) => {
+      queryClient.setQueryData([...notifKeys.all, "preferences"], preferences);
+      addToast({
+        type: "success",
+        title: "Préférences de notifications enregistrées",
+      });
+    },
+    onError: () =>
+      addToast({
+        type: "error",
+        title: "Erreur",
+        description: "Impossible d’enregistrer les préférences",
+      }),
+  });
+};
+
 export const useMarkNotificationRead = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -52,7 +87,7 @@ export const useMarkAllNotificationsRead = () => {
       queryClient.invalidateQueries({ queryKey: notifKeys.lists() });
       queryClient.invalidateQueries({ queryKey: notifKeys.unread() });
       queryClient.invalidateQueries({ queryKey: notifKeys.stats() });
-      addToast({ type: 'success', title: 'Toutes les notifications lues' });
+      addToast({ type: "success", title: "Toutes les notifications lues" });
     },
   });
 };
@@ -65,7 +100,7 @@ export const useDeleteNotification = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notifKeys.lists() });
       queryClient.invalidateQueries({ queryKey: notifKeys.stats() });
-      addToast({ type: 'success', title: 'Notification supprimée' });
+      addToast({ type: "success", title: "Notification supprimée" });
     },
   });
 };

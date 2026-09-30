@@ -8,6 +8,7 @@ import {
   ComplaintCommentAddedEvent,
   ComplaintOverdueEvent,
 } from '../../../events/complaint.events';
+import { NotificationsService } from '../notifications.service';
 
 /**
  * Listener pour les événements Complaints
@@ -21,11 +22,21 @@ import {
 export class ComplaintListener {
   private readonly logger = new Logger(ComplaintListener.name);
 
+  constructor(private readonly notificationsService: NotificationsService) {}
+
   /**
    * Réclamation créée → Email au client
    */
   @OnEvent('complaint.created', { async: true })
   async handleComplaintCreated(event: ComplaintCreatedEvent) {
+    await this.notificationsService.notifyOrganizationManagers({
+      organizationId: event.organizationId,
+      notificationType: 'complaint.created',
+      subject: `Nouvelle réclamation ${event.ticketNumber}`,
+      body: event.title,
+      relatedEntityType: 'complaint',
+      relatedEntityId: event.complaintId,
+    });
     this.logger.log({
       event: 'notification.complaint.created',
       complaintId: event.complaintId,

@@ -1,63 +1,112 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useTheme } from 'next-themes';
-import { useForm } from 'react-hook-form';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/components/ui/toast';
-import { Settings as SettingsIcon, User, Building2, Bell, Shield, Palette, Globe, CreditCard } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
+import { useForm } from "react-hook-form";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/components/ui/toast";
+import {
+  Settings as SettingsIcon,
+  User,
+  Building2,
+  Bell,
+  Shield,
+  Palette,
+  Globe,
+  CreditCard,
+} from "lucide-react";
 import {
   useCurrentUser,
   useOrganization,
   useUpdateProfile,
   useUpdateOrganization,
   useUpdatePreferences,
+  useNotificationPreferences,
+  useUpdateNotificationPreferences,
   useSessions,
   useRevokeSession,
   useOrgUsage,
-} from '@/hooks';
+} from "@/hooks";
 
 // ── Labels ──────────────────────────────────────────────────────────────────
 const planLabels: Record<string, string> = {
-  essentialiel: 'Essentiel',
-  pro: 'Pro',
-  business: 'Business',
-  institution: 'Institution',
+  essentialiel: "Essentiel",
+  pro: "Pro",
+  business: "Business",
+  institution: "Institution",
 };
 
 const statusLabels: Record<string, { label: string; color: string }> = {
-  active: { label: 'Actif', color: 'text-green-600 bg-green-50 dark:bg-green-900/20' },
-  trial: { label: 'Essai gratuit', color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20' },
-  suspended: { label: 'Suspendu', color: 'text-red-600 bg-red-50 dark:bg-red-900/20' },
-  expired: { label: 'Expiré', color: 'text-slate-600 bg-slate-100 dark:bg-slate-800' },
+  active: {
+    label: "Actif",
+    color: "text-green-600 bg-green-50 dark:bg-green-900/20",
+  },
+  trial: {
+    label: "Essai gratuit",
+    color: "text-amber-600 bg-amber-50 dark:bg-amber-900/20",
+  },
+  suspended: {
+    label: "Suspendu",
+    color: "text-red-600 bg-red-50 dark:bg-red-900/20",
+  },
+  expired: {
+    label: "Expiré",
+    color: "text-slate-600 bg-slate-100 dark:bg-slate-800",
+  },
 };
 
 // ── QuotaBar ─────────────────────────────────────────────────────────────────
-function QuotaBar({ label, used, max }: { label: string; used: number; max: number }) {
+function QuotaBar({
+  label,
+  used,
+  max,
+}: {
+  label: string;
+  used: number;
+  max: number;
+}) {
   const pct = Math.min(Math.round((used / max) * 100), 100);
-  const color = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-[#3a5a40]';
+  const color =
+    pct >= 90 ? "bg-red-500" : pct >= 70 ? "bg-amber-500" : "bg-[#3a5a40]";
   return (
     <div>
       <div className="flex justify-between text-sm mb-1">
-        <span className="text-slate-700 dark:text-slate-300 font-medium">{label}</span>
-        <span className={`font-semibold ${pct >= 90 ? 'text-red-600' : 'text-slate-600 dark:text-slate-400'}`}>
+        <span className="text-slate-700 dark:text-slate-300 font-medium">
+          {label}
+        </span>
+        <span
+          className={`font-semibold ${pct >= 90 ? "text-red-600" : "text-slate-600 dark:text-slate-400"}`}
+        >
           {used} / {max}
         </span>
       </div>
       <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
+        <div
+          className={`h-full rounded-full ${color} transition-all`}
+          style={{ width: `${pct}%` }}
+        />
       </div>
-      {pct >= 90 && <p className="text-xs text-red-600 dark:text-red-400 mt-1">Quota presque atteint</p>}
+      {pct >= 90 && (
+        <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+          Quota presque atteint
+        </p>
+      )}
     </div>
   );
 }
 
 // ── SubscriptionTab ───────────────────────────────────────────────────────────
-function SubscriptionTab({ usage, isLoading }: { usage: any; isLoading: boolean }) {
+function SubscriptionTab({
+  usage,
+  isLoading,
+}: {
+  usage: any;
+  isLoading: boolean;
+}) {
   if (isLoading) {
     return (
       <div className="max-w-2xl space-y-4 animate-pulse">
@@ -70,34 +119,51 @@ function SubscriptionTab({ usage, isLoading }: { usage: any; isLoading: boolean 
   if (!usage) {
     return (
       <div className="max-w-2xl">
-        <p className="text-sm text-slate-500 dark:text-slate-400">Impossible de charger les données d'abonnement.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Impossible de charger les données d'abonnement.
+        </p>
       </div>
     );
   }
 
   const planLabel = planLabels[usage.plan] ?? usage.plan;
-  const statusInfo = statusLabels[usage.status] ?? { label: usage.status, color: 'text-slate-600 bg-slate-100' };
-  const isTrial = usage.status === 'trial';
+  const statusInfo = statusLabels[usage.status] ?? {
+    label: usage.status,
+    color: "text-slate-600 bg-slate-100",
+  };
+  const isTrial = usage.status === "trial";
 
-  const upgradeSubject = encodeURIComponent(`Demande d'upgrade — plan ${planLabel}`);
+  const upgradeSubject = encodeURIComponent(
+    `Demande d'upgrade — plan ${planLabel}`,
+  );
   const upgradeHref = `mailto:contact@satisclient.sn?subject=${upgradeSubject}`;
 
   return (
     <div className="max-w-2xl space-y-6">
       {/* Plan actuel */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-800/60 p-5 space-y-3">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Plan actuel</h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          Plan actuel
+        </h2>
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-2xl font-bold text-slate-900 dark:text-white">{planLabel}</span>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusInfo.color}`}>
+          <span className="text-2xl font-bold text-slate-900 dark:text-white">
+            {planLabel}
+          </span>
+          <span
+            className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusInfo.color}`}
+          >
             {statusInfo.label}
           </span>
         </div>
         {usage.subscriptionEndsAt && (
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Valide jusqu'au{' '}
+            Valide jusqu'au{" "}
             <span className="font-medium text-slate-700 dark:text-slate-300">
-              {new Date(usage.subscriptionEndsAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {new Date(usage.subscriptionEndsAt).toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
             </span>
           </p>
         )}
@@ -110,16 +176,18 @@ function SubscriptionTab({ usage, isLoading }: { usage: any; isLoading: boolean 
           <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
             {usage.daysRemainingTrial != null
               ? usage.daysRemainingTrial > 0
-                ? `${usage.daysRemainingTrial} jour${usage.daysRemainingTrial > 1 ? 's' : ''} restant${usage.daysRemainingTrial > 1 ? 's' : ''} dans votre essai gratuit`
-                : 'Votre essai gratuit est terminé'
-              : 'Essai gratuit en cours'}
+                ? `${usage.daysRemainingTrial} jour${usage.daysRemainingTrial > 1 ? "s" : ""} restant${usage.daysRemainingTrial > 1 ? "s" : ""} dans votre essai gratuit`
+                : "Votre essai gratuit est terminé"
+              : "Essai gratuit en cours"}
           </p>
         </div>
       )}
 
       {/* Quotas */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-800/60 p-5 space-y-5">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Utilisation des quotas</h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+          Utilisation des quotas
+        </h2>
         <QuotaBar
           label="Sites"
           used={usage.limits.sites.used}
@@ -138,14 +206,17 @@ function SubscriptionTab({ usage, isLoading }: { usage: any; isLoading: boolean 
       </div>
 
       {/* CTA upgrade */}
-      {(usage.plan === 'essentialiel' || usage.plan === 'pro' || isTrial) && (
+      {(usage.plan === "essentialiel" || usage.plan === "pro" || isTrial) && (
         <div className="rounded-xl border border-[#3a5a40]/30 bg-[#3a5a40]/5 dark:bg-[#3a5a40]/10 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex-1">
             <p className="text-sm font-semibold text-slate-900 dark:text-white">
-              {usage.plan === 'pro' ? 'Passez à Business' : 'Passez à Pro ou Business'}
+              {usage.plan === "pro"
+                ? "Passez à Business"
+                : "Passez à Pro ou Business"}
             </p>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-              Augmentez vos limites et débloquez toutes les fonctionnalités avancées.
+              Augmentez vos limites et débloquez toutes les fonctionnalités
+              avancées.
             </p>
           </div>
           <a
@@ -153,7 +224,9 @@ function SubscriptionTab({ usage, isLoading }: { usage: any; isLoading: boolean 
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3a5a40] text-white text-sm font-medium hover:bg-[#2e4a33] transition-colors whitespace-nowrap"
           >
             <CreditCard className="h-4 w-4" />
-            {usage.plan === 'pro' ? 'Passer à Business' : 'Passer à Pro / Business'}
+            {usage.plan === "pro"
+              ? "Passer à Business"
+              : "Passer à Pro / Business"}
           </a>
         </div>
       )}
@@ -162,35 +235,48 @@ function SubscriptionTab({ usage, isLoading }: { usage: any; isLoading: boolean 
 }
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState("profile");
   const { data: currentUser } = useCurrentUser();
-  const { data: currentOrg } = useOrganization(currentUser?.organizationId ?? '');
+  const { data: currentOrg } = useOrganization(
+    currentUser?.organizationId ?? "",
+  );
   const { data: orgUsage, isLoading: usageLoading } = useOrgUsage();
   const { addToast } = useToast();
 
   const [emailNotifications, setEmailNotifications] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(false);
+  const [inAppNotifications, setInAppNotifications] = useState(true);
+  const [eventPreferences, setEventPreferences] = useState<
+    Record<string, boolean>
+  >({
+    feedbacks: true,
+    complaints: true,
+    qr_scans: true,
+    reports: true,
+    users: true,
+  });
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   const { theme: currentTheme, setTheme } = useTheme();
-  const [selectedTheme, setSelectedTheme] = useState('system');
-  const [selectedLang, setSelectedLang] = useState('fr');
-  const [selectedTz, setSelectedTz] = useState('Europe/Paris');
-  const [selectedDateFormat, setSelectedDateFormat] = useState('DD/MM/YYYY');
+  const [selectedTheme, setSelectedTheme] = useState("system");
+  const [selectedLang, setSelectedLang] = useState("fr");
+  const [selectedTz, setSelectedTz] = useState("Europe/Paris");
+  const [selectedDateFormat, setSelectedDateFormat] = useState("DD/MM/YYYY");
 
   // Mutations API
   const updateProfile = useUpdateProfile();
   const updateOrg = useUpdateOrganization();
   const updatePrefs = useUpdatePreferences();
+  const { data: notificationPreferences } = useNotificationPreferences();
+  const updateNotificationPreferences = useUpdateNotificationPreferences();
   const { data: sessions } = useSessions();
   const revokeSession = useRevokeSession();
 
   // Formulaire profil (React Hook Form)
   const profileForm = useForm({
     defaultValues: {
-      firstName: currentUser?.firstName ?? '',
-      lastName: currentUser?.lastName ?? '',
-      email: currentUser?.email ?? '',
-      phone: (currentUser as any)?.phone ?? '',
+      firstName: currentUser?.firstName ?? "",
+      lastName: currentUser?.lastName ?? "",
+      email: currentUser?.email ?? "",
+      phone: (currentUser as any)?.phone ?? "",
     },
   });
 
@@ -201,25 +287,41 @@ export default function SettingsPage() {
   useEffect(() => {
     if (currentUser) {
       profileForm.reset({
-        firstName: currentUser.firstName ?? '',
-        lastName: currentUser.lastName ?? '',
-        email: currentUser.email ?? '',
-        phone: (currentUser as any)?.phone ?? '',
+        firstName: currentUser.firstName ?? "",
+        lastName: currentUser.lastName ?? "",
+        email: currentUser.email ?? "",
+        phone: (currentUser as any)?.phone ?? "",
       });
       // Charger les préférences sauvegardées
-      const prefs = (currentUser as any)?.preferences as Record<string, unknown> | undefined;
+      const prefs = (currentUser as any)?.preferences as
+        Record<string, unknown> | undefined;
       if (prefs) {
-        if (prefs.emailNotifications !== undefined) setEmailNotifications(prefs.emailNotifications as boolean);
-        if (prefs.pushNotifications !== undefined) setPushNotifications(prefs.pushNotifications as boolean);
-        if (prefs.twoFactorEnabled !== undefined) setTwoFactorAuth(prefs.twoFactorEnabled as boolean);
-        if (prefs.theme) { setSelectedTheme(prefs.theme as string); }
+        if (prefs.emailNotifications !== undefined)
+          setEmailNotifications(prefs.emailNotifications as boolean);
+        if (prefs.pushNotifications !== undefined)
+          setInAppNotifications(prefs.pushNotifications as boolean);
+        if (prefs.twoFactorEnabled !== undefined)
+          setTwoFactorAuth(prefs.twoFactorEnabled as boolean);
+        if (prefs.theme) {
+          setSelectedTheme(prefs.theme as string);
+        }
         if (prefs.locale) setSelectedLang(prefs.locale as string);
         if (prefs.timezone) setSelectedTz(prefs.timezone as string);
         if (prefs.dateFormat) setSelectedDateFormat(prefs.dateFormat as string);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!notificationPreferences) return;
+    setEmailNotifications(notificationPreferences.emailEnabled);
+    setInAppNotifications(notificationPreferences.inAppEnabled);
+    setEventPreferences((current) => ({
+      ...current,
+      ...notificationPreferences.eventPreferences,
+    }));
+  }, [notificationPreferences]);
 
   const onSaveProfile = profileForm.handleSubmit((data) => {
     updateProfile.mutate({
@@ -230,11 +332,11 @@ export default function SettingsPage() {
   });
 
   // Org name contrôlé
-  const [orgName, setOrgName] = useState('');
+  const [orgName, setOrgName] = useState("");
 
   useEffect(() => {
     if (currentOrg) {
-      setOrgName(currentOrg.name ?? '');
+      setOrgName(currentOrg.name ?? "");
     }
   }, [currentOrg]);
 
@@ -247,12 +349,21 @@ export default function SettingsPage() {
   };
 
   const handleSaveNotifications = () => {
-    updatePrefs.mutate({ emailNotifications, pushNotifications });
+    updateNotificationPreferences.mutate({
+      emailEnabled: emailNotifications,
+      smsEnabled: false,
+      inAppEnabled: inAppNotifications,
+      eventPreferences,
+    });
   };
 
   const handleSaveSecurity = () => {
     // 2FA non implémenté — rien à sauvegarder pour l'instant
-    addToast({ type: 'info', title: 'Sécurité', description: 'Aucune modification à enregistrer' });
+    addToast({
+      type: "info",
+      title: "Sécurité",
+      description: "Aucune modification à enregistrer",
+    });
   };
 
   const handleSaveAppearance = () => {
@@ -260,20 +371,24 @@ export default function SettingsPage() {
     updatePrefs.mutate({ theme: selectedTheme });
   };
 
-  const isDirtyAppearance = selectedTheme !== (currentTheme ?? 'system');
+  const isDirtyAppearance = selectedTheme !== (currentTheme ?? "system");
 
   const handleSaveLocalization = () => {
-    updatePrefs.mutate({ locale: selectedLang, timezone: selectedTz, dateFormat: selectedDateFormat });
+    updatePrefs.mutate({
+      locale: selectedLang,
+      timezone: selectedTz,
+      dateFormat: selectedDateFormat,
+    });
   };
 
   const tabs = [
-    { id: 'profile', label: 'Profil', icon: User },
-    { id: 'organization', label: 'Organisation', icon: Building2 },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'security', label: 'Sécurité', icon: Shield },
-    { id: 'appearance', label: 'Apparence', icon: Palette },
-    { id: 'localization', label: 'Localisation', icon: Globe },
-    { id: 'subscription', label: 'Abonnement', icon: CreditCard },
+    { id: "profile", label: "Profil", icon: User },
+    { id: "organization", label: "Organisation", icon: Building2 },
+    { id: "notifications", label: "Notifications", icon: Bell },
+    { id: "security", label: "Sécurité", icon: Shield },
+    { id: "appearance", label: "Apparence", icon: Palette },
+    { id: "localization", label: "Localisation", icon: Globe },
+    { id: "subscription", label: "Abonnement", icon: CreditCard },
   ];
 
   return (
@@ -299,8 +414,8 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 pb-4 px-1 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    ? "border-primary-600 text-primary-600 dark:text-primary-400"
+                    : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -314,7 +429,7 @@ export default function SettingsPage() {
       {/* Tabs Content */}
       <div>
         {/* Profile Tab */}
-        {activeTab === 'profile' && (
+        {activeTab === "profile" && (
           <div key={currentUser?.id} className="max-w-2xl space-y-6">
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
@@ -322,12 +437,24 @@ export default function SettingsPage() {
               </h2>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input label="Prénom" {...profileForm.register('firstName')} />
-                  <Input label="Nom" {...profileForm.register('lastName')} />
+                  <Input
+                    label="Prénom"
+                    {...profileForm.register("firstName")}
+                  />
+                  <Input label="Nom" {...profileForm.register("lastName")} />
                 </div>
-                <Input label="Email" type="email" {...profileForm.register('email')} readOnly />
-                <Input label="Téléphone" {...profileForm.register('phone')} />
-                <Textarea label="Bio" rows={3} placeholder="Parlez-nous de vous..." />
+                <Input
+                  label="Email"
+                  type="email"
+                  {...profileForm.register("email")}
+                  readOnly
+                />
+                <Input label="Téléphone" {...profileForm.register("phone")} />
+                <Textarea
+                  label="Bio"
+                  rows={3}
+                  placeholder="Parlez-nous de vous..."
+                />
               </div>
             </div>
 
@@ -337,22 +464,39 @@ export default function SettingsPage() {
               </h2>
               <div className="rounded-lg border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/10 p-4">
                 <p className="text-sm text-amber-700 dark:text-amber-400">
-                  La modification du mot de passe sera disponible dans une prochaine version.
+                  La modification du mot de passe sera disponible dans une
+                  prochaine version.
                 </p>
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-6">
-              <Button variant="outline" onClick={() => profileForm.reset({ firstName: currentUser?.firstName ?? '', lastName: currentUser?.lastName ?? '', email: currentUser?.email ?? '', phone: (currentUser as any)?.phone ?? '' })}>Annuler</Button>
-              <Button variant="primary" onClick={onSaveProfile} disabled={updateProfile.isPending}>
-                {updateProfile.isPending ? 'Enregistrement...' : 'Enregistrer'}
+              <Button
+                variant="outline"
+                onClick={() =>
+                  profileForm.reset({
+                    firstName: currentUser?.firstName ?? "",
+                    lastName: currentUser?.lastName ?? "",
+                    email: currentUser?.email ?? "",
+                    phone: (currentUser as any)?.phone ?? "",
+                  })
+                }
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="primary"
+                onClick={onSaveProfile}
+                disabled={updateProfile.isPending}
+              >
+                {updateProfile.isPending ? "Enregistrement..." : "Enregistrer"}
               </Button>
             </div>
           </div>
         )}
 
         {/* Organization Tab */}
-        {activeTab === 'organization' && (
+        {activeTab === "organization" && (
           <div className="max-w-2xl space-y-6">
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
@@ -364,21 +508,31 @@ export default function SettingsPage() {
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
                 />
-                <Input label="Site web" defaultValue={(currentOrg as any)?.website || ''} />
-                <Textarea label="Description" rows={3} defaultValue={(currentOrg as any)?.description || ''} />
+                <Input
+                  label="Site web"
+                  defaultValue={(currentOrg as any)?.website || ""}
+                />
+                <Textarea
+                  label="Description"
+                  rows={3}
+                  defaultValue={(currentOrg as any)?.description || ""}
+                />
                 <Select
                   label="Secteur d'activité"
                   options={[
-                    { value: 'banque', label: 'Banque / Finance' },
-                    { value: 'sante', label: 'Santé' },
-                    { value: 'telecom', label: 'Télécommunications' },
-                    { value: 'commerce', label: 'Commerce' },
-                    { value: 'industrie', label: 'Industrie' },
-                    { value: 'autre', label: 'Autre' },
+                    { value: "banque", label: "Banque / Finance" },
+                    { value: "sante", label: "Santé" },
+                    { value: "telecom", label: "Télécommunications" },
+                    { value: "commerce", label: "Commerce" },
+                    { value: "industrie", label: "Industrie" },
+                    { value: "autre", label: "Autre" },
                   ]}
-                  defaultValue={(currentOrg as any)?.industry || ''}
+                  defaultValue={(currentOrg as any)?.industry || ""}
                 />
-                <Input label="Pays" defaultValue={(currentOrg as any)?.country || ''} />
+                <Input
+                  label="Pays"
+                  defaultValue={(currentOrg as any)?.country || ""}
+                />
               </div>
             </div>
 
@@ -390,28 +544,41 @@ export default function SettingsPage() {
                 <Select
                   label="Formule"
                   options={[
-                    { value: 'essentialiel', label: 'Essentiel' },
-                    { value: 'pro', label: 'Pro' },
-                    { value: 'business', label: 'Business' },
-                    { value: 'institution', label: 'Institution' },
+                    { value: "essentialiel", label: "Essentiel" },
+                    { value: "pro", label: "Pro" },
+                    { value: "business", label: "Business" },
+                    { value: "institution", label: "Institution" },
                   ]}
-                  defaultValue={currentOrg?.subscriptionPlan || ''}
+                  defaultValue={currentOrg?.subscriptionPlan || ""}
                 />
-                <Input label="Email de facturation" type="email" defaultValue={currentOrg?.email || ''} />
+                <Input
+                  label="Email de facturation"
+                  type="email"
+                  defaultValue={currentOrg?.email || ""}
+                />
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-6">
-              <Button variant="outline" onClick={() => setOrgName((currentOrg as any)?.name || '')}>Annuler</Button>
-              <Button variant="primary" onClick={handleSaveOrg} disabled={updateOrg.isPending}>
-                {updateOrg.isPending ? 'Enregistrement...' : 'Enregistrer'}
+              <Button
+                variant="outline"
+                onClick={() => setOrgName((currentOrg as any)?.name || "")}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSaveOrg}
+                disabled={updateOrg.isPending}
+              >
+                {updateOrg.isPending ? "Enregistrement..." : "Enregistrer"}
               </Button>
             </div>
           </div>
         )}
 
         {/* Notifications Tab */}
-        {activeTab === 'notifications' && (
+        {activeTab === "notifications" && (
           <div className="max-w-2xl space-y-6">
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
@@ -435,12 +602,12 @@ export default function SettingsPage() {
 
                 <label className="flex items-start gap-3 cursor-pointer">
                   <Checkbox
-                    checked={pushNotifications}
-                    onChange={(e) => setPushNotifications(e.target.checked)}
+                    checked={inAppNotifications}
+                    onChange={(e) => setInAppNotifications(e.target.checked)}
                   />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-slate-900 dark:text-white">
-                      Notifications push
+                      Notifications dans l'application
                     </p>
                     <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                       Recevoir des notifications push sur votre navigateur
@@ -456,14 +623,25 @@ export default function SettingsPage() {
               </h2>
               <div className="space-y-3">
                 {[
-                  { id: 'feedbacks', label: 'Nouveaux feedbacks' },
-                  { id: 'complaints', label: 'Nouvelles réclamations' },
-                  { id: 'qr_scans', label: 'Scans QR codes' },
-                  { id: 'reports', label: 'Rapports générés' },
-                  { id: 'users', label: 'Nouveaux utilisateurs' },
+                  { id: "feedbacks", label: "Nouveaux feedbacks" },
+                  { id: "complaints", label: "Nouvelles réclamations" },
+                  { id: "qr_scans", label: "Scans QR codes" },
+                  { id: "reports", label: "Rapports générés" },
+                  { id: "users", label: "Nouveaux utilisateurs" },
                 ].map((item) => (
-                  <label key={item.id} className="flex items-center gap-3 cursor-pointer">
-                    <Checkbox defaultChecked />
+                  <label
+                    key={item.id}
+                    className="flex items-center gap-3 cursor-pointer"
+                  >
+                    <Checkbox
+                      checked={eventPreferences[item.id] ?? true}
+                      onChange={(e) =>
+                        setEventPreferences((current) => ({
+                          ...current,
+                          [item.id]: e.target.checked,
+                        }))
+                      }
+                    />
                     <span className="text-sm text-slate-700 dark:text-slate-300">
                       {item.label}
                     </span>
@@ -474,15 +652,21 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-end gap-3 pt-6">
               <Button variant="outline">Annuler</Button>
-              <Button variant="primary" onClick={handleSaveNotifications} disabled={updatePrefs.isPending}>
-                {updatePrefs.isPending ? 'Enregistrement...' : 'Enregistrer'}
+              <Button
+                variant="primary"
+                onClick={handleSaveNotifications}
+                disabled={updateNotificationPreferences.isPending}
+              >
+                {updateNotificationPreferences.isPending
+                  ? "Enregistrement..."
+                  : "Enregistrer"}
               </Button>
             </div>
           </div>
         )}
 
         {/* Security Tab */}
-        {activeTab === 'security' && (
+        {activeTab === "security" && (
           <div className="max-w-2xl space-y-6">
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
@@ -520,9 +704,14 @@ export default function SettingsPage() {
                       className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-[#1a1a1a]"
                     >
                       <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">Session active</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">
+                          Session active
+                        </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Expire le {new Date(session.expiresAt).toLocaleDateString('fr-FR')}
+                          Expire le{" "}
+                          {new Date(session.expiresAt).toLocaleDateString(
+                            "fr-FR",
+                          )}
                         </p>
                       </div>
                       <button
@@ -535,22 +724,28 @@ export default function SettingsPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Aucune session active trouvée.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Aucune session active trouvée.
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-6">
               <Button variant="outline">Annuler</Button>
-              <Button variant="primary" onClick={handleSaveSecurity} disabled={updatePrefs.isPending}>
-                {updatePrefs.isPending ? 'Enregistrement...' : 'Enregistrer'}
+              <Button
+                variant="primary"
+                onClick={handleSaveSecurity}
+                disabled={updatePrefs.isPending}
+              >
+                {updatePrefs.isPending ? "Enregistrement..." : "Enregistrer"}
               </Button>
             </div>
           </div>
         )}
 
         {/* Appearance Tab */}
-        {activeTab === 'appearance' && (
+        {activeTab === "appearance" && (
           <div className="max-w-2xl space-y-6">
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
@@ -558,9 +753,17 @@ export default function SettingsPage() {
               </h2>
               <div className="space-y-3">
                 {[
-                  { id: 'light', label: 'Clair', description: 'Thème lumineux' },
-                  { id: 'dark', label: 'Sombre', description: 'Thème sombre' },
-                  { id: 'system', label: 'Système', description: 'Suit les préférences système' },
+                  {
+                    id: "light",
+                    label: "Clair",
+                    description: "Thème lumineux",
+                  },
+                  { id: "dark", label: "Sombre", description: "Thème sombre" },
+                  {
+                    id: "system",
+                    label: "Système",
+                    description: "Suit les préférences système",
+                  },
                 ].map((theme) => (
                   <label
                     key={theme.id}
@@ -586,12 +789,25 @@ export default function SettingsPage() {
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-6">
-              <Button variant="outline" onClick={() => setSelectedTheme(currentTheme ?? 'system')}>Annuler</Button>
-              <Button variant="primary" onClick={handleSaveAppearance} disabled={updatePrefs.isPending}>
-                {updatePrefs.isPending ? 'Enregistrement...' : (
+              <Button
+                variant="outline"
+                onClick={() => setSelectedTheme(currentTheme ?? "system")}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSaveAppearance}
+                disabled={updatePrefs.isPending}
+              >
+                {updatePrefs.isPending ? (
+                  "Enregistrement..."
+                ) : (
                   <span className="flex items-center gap-2">
                     Enregistrer
-                    {isDirtyAppearance && <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />}
+                    {isDirtyAppearance && (
+                      <span className="h-2 w-2 rounded-full bg-red-500 inline-block" />
+                    )}
                   </span>
                 )}
               </Button>
@@ -600,12 +816,12 @@ export default function SettingsPage() {
         )}
 
         {/* Subscription Tab */}
-        {activeTab === 'subscription' && (
+        {activeTab === "subscription" && (
           <SubscriptionTab usage={orgUsage} isLoading={usageLoading} />
         )}
 
         {/* Localization Tab */}
-        {activeTab === 'localization' && (
+        {activeTab === "localization" && (
           <div className="max-w-2xl space-y-6">
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
@@ -615,9 +831,9 @@ export default function SettingsPage() {
                 <Select
                   label="Langue"
                   options={[
-                    { value: 'fr', label: 'Français' },
-                    { value: 'en', label: 'English' },
-                    { value: 'es', label: 'Español' },
+                    { value: "fr", label: "Français" },
+                    { value: "en", label: "English" },
+                    { value: "es", label: "Español" },
                   ]}
                   value={selectedLang}
                   onChange={(val) => setSelectedLang(val)}
@@ -625,9 +841,12 @@ export default function SettingsPage() {
                 <Select
                   label="Fuseau horaire"
                   options={[
-                    { value: 'Europe/Paris', label: 'Europe/Paris (GMT+1)' },
-                    { value: 'Europe/London', label: 'Europe/London (GMT+0)' },
-                    { value: 'America/New_York', label: 'America/New_York (GMT-5)' },
+                    { value: "Europe/Paris", label: "Europe/Paris (GMT+1)" },
+                    { value: "Europe/London", label: "Europe/London (GMT+0)" },
+                    {
+                      value: "America/New_York",
+                      label: "America/New_York (GMT-5)",
+                    },
                   ]}
                   value={selectedTz}
                   onChange={(val) => setSelectedTz(val)}
@@ -635,9 +854,9 @@ export default function SettingsPage() {
                 <Select
                   label="Format de date"
                   options={[
-                    { value: 'DD/MM/YYYY', label: 'JJ/MM/AAAA' },
-                    { value: 'MM/DD/YYYY', label: 'MM/JJ/AAAA' },
-                    { value: 'YYYY-MM-DD', label: 'AAAA-MM-JJ' },
+                    { value: "DD/MM/YYYY", label: "JJ/MM/AAAA" },
+                    { value: "MM/DD/YYYY", label: "MM/JJ/AAAA" },
+                    { value: "YYYY-MM-DD", label: "AAAA-MM-JJ" },
                   ]}
                   value={selectedDateFormat}
                   onChange={(val) => setSelectedDateFormat(val)}
@@ -646,9 +865,21 @@ export default function SettingsPage() {
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-6">
-              <Button variant="outline" onClick={() => { setSelectedLang('fr'); setSelectedTz('Africa/Dakar'); }}>Annuler</Button>
-              <Button variant="primary" onClick={handleSaveLocalization} disabled={updatePrefs.isPending}>
-                {updatePrefs.isPending ? 'Enregistrement...' : 'Enregistrer'}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSelectedLang("fr");
+                  setSelectedTz("Africa/Dakar");
+                }}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSaveLocalization}
+                disabled={updatePrefs.isPending}
+              >
+                {updatePrefs.isPending ? "Enregistrement..." : "Enregistrer"}
               </Button>
             </div>
           </div>

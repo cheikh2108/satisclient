@@ -5,6 +5,7 @@ import {
   FeedbackNegativeEvent,
   FeedbackProcessedEvent,
 } from '../../../events/feedback.events';
+import { NotificationsService } from '../notifications.service';
 
 /**
  * Listener pour les événements Feedback
@@ -17,11 +18,21 @@ import {
 export class FeedbackListener {
   private readonly logger = new Logger(FeedbackListener.name);
 
+  constructor(private readonly notificationsService: NotificationsService) {}
+
   /**
    * Feedback créé → Notification interne (quality_manager)
    */
   @OnEvent('feedback.created', { async: true })
   async handleFeedbackCreated(event: FeedbackCreatedEvent) {
+    await this.notificationsService.notifyOrganizationManagers({
+      organizationId: event.organizationId,
+      notificationType: 'feedback.created',
+      subject: 'Nouveau feedback reçu',
+      body: `Feedback reçu sur ${event.siteName} avec une note de ${event.overallRating ?? '—'}/5.`,
+      relatedEntityType: 'feedback',
+      relatedEntityId: event.feedbackId,
+    });
     this.logger.log({
       event: 'notification.feedback.created',
       feedbackId: event.feedbackId,
