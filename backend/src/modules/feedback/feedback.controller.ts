@@ -169,7 +169,7 @@ export class FeedbackController {
     @Query('take') take?: number,
     @Query('includeRelations') includeRelations?: boolean,
   ): Promise<FeedbackResponseDto[]> {
-    const orgId = organizationId || req.user?.organizationId;
+    const orgId = organizationId || (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
     return this.feedbackService.findAll({
       organizationId: orgId,
       siteId,
@@ -198,7 +198,7 @@ export class FeedbackController {
     @Query('siteId') siteId?: string,
     @Query('days') days?: string,
   ) {
-    const orgId = organizationId || req.user?.organizationId;
+    const orgId = organizationId || (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
     return this.feedbackService.getTimeseries({
       organizationId: orgId,
       siteId,
@@ -256,7 +256,7 @@ export class FeedbackController {
     @Query('siteId') siteId?: string,
     @Query('period') period?: string,
   ) {
-    const orgId = organizationId || req.user?.organizationId;
+    const orgId = organizationId || (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
     return this.feedbackService.getStats({
       organizationId: orgId,
       siteId,

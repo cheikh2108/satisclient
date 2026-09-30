@@ -118,7 +118,7 @@ export class ComplaintsController {
     @Query('take') take?: number,
     @Query('includeRelations') includeRelations?: boolean,
   ): Promise<ComplaintResponseDto[]> {
-    const orgId = organizationId || req.user?.organizationId;
+    const orgId = organizationId || (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
     return this.complaintsService.findAll({
       organizationId: orgId,
       siteId,
@@ -169,7 +169,7 @@ export class ComplaintsController {
     @Query('siteId') siteId?: string,
     @Query('period') period?: string,
   ) {
-    const orgId = organizationId || req.user?.organizationId;
+    const orgId = organizationId || (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
     return this.complaintsService.getStats({ organizationId: orgId, siteId, period: period || '30d' });
   }
 
