@@ -100,7 +100,7 @@ satisclient/
 | **Business**    | 125 000 FCFA | 15       | 30       | + IA, analytics avancées, API                  |
 | **Institution** | Sur devis    | Illimité | Illimité | + SSO, intégrations custom, sécurité renforcée |
 
-**Offre de lancement:** 30 jours d'essai gratuits
+**Offre de lancement:** 7 jours d'essai gratuits
 
 ## 🚀 Démarrage rapide
 

@@ -69,7 +69,7 @@ export default function RegisterPage() {
             <span className="font-bold text-lg text-[#0a0a0a]">SatisClient</span>
           </Link>
           <h1 className="text-2xl font-bold text-[#0a0a0a]">Créer votre compte</h1>
-          <p className="text-sm text-[#6a6a6a] mt-1">14 jours d'essai gratuit, sans carte bancaire</p>
+          <p className="text-sm text-[#6a6a6a] mt-1">7 jours d'essai gratuit, sans carte bancaire</p>
         </div>
 
         <div className="bg-white border border-[#e8e3d9] rounded-2xl p-8 shadow-sm">

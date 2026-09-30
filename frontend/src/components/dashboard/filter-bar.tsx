@@ -22,7 +22,7 @@ export function FilterBar({ onExport }: FilterBarProps) {
   const { data: sitesData } = useSites();
 
   const sites = [
-    { value: '', label: 'Tous les sites' },
+            { value: '', label: 'Tous les établissements' },
     ...(sitesData?.data || []).map((s) => ({ value: s.id, label: s.name })),
   ];
 

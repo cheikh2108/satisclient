@@ -229,10 +229,10 @@ export default function SitesPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-bold text-slate-900 dark:text-white leading-tight">
-            Sites
+            Établissements
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Gérez tous vos établissements
+            Gérez vos agences, boutiques et points de service
           </p>
         </div>
         <button
@@ -244,13 +244,13 @@ export default function SitesPage() {
           className="flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 active:scale-95 transition-all shadow-sm"
         >
           <Plus className="h-4 w-4" />
-          <span className="hidden xs:inline">Nouveau site</span>
+          <span className="hidden xs:inline">Nouvel établissement</span>
         </button>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Sites" value={(stats?.total ?? sites.length).toString()} change={(stats?.total??0)>0 ? `${Math.round(((stats?.active??0)/(stats?.total??1))*100)}%` : '—'} isPositive />
+        <StatCard label="Total établissements" value={(stats?.total ?? sites.length).toString()} change={(stats?.total??0)>0 ? `${Math.round(((stats?.active??0)/(stats?.total??1))*100)}%` : '—'} isPositive />
         <StatCard label="Actifs" value={(stats?.active ?? sites.filter((s: any) => s.isActive).length).toString()} change={`${Math.round((sites.filter((s: any) => s.isActive).length / Math.max(sites.length, 1)) * 100)}%`} isPositive />
         <StatCard label="Feedbacks (30j)" value={(feedbackStats?.total ?? 0).toString()} change={(feedbackStats?.total??0)>0 ? `${Math.round(((feedbackStats as any)?.bySentiment?.positive??0)/(feedbackStats?.total??1)*100)}%` : '—'} isPositive />
         <StatCard label="Note moyenne" value={feedbackStats?.averageRating ? `${feedbackStats.averageRating.toFixed(1)}/5` : '—'} change="—" isPositive={(feedbackStats?.averageRating ?? 0) >= 3} />
@@ -261,7 +261,7 @@ export default function SitesPage() {
         <SkeletonTable />
       ) : sites.length === 0 ? (
         <div className="text-center py-12 rounded-lg border border-slate-200 dark:border-slate-800/60 bg-slate-50 dark:bg-[#0f0f0f]">
-          <p className="text-slate-600 dark:text-slate-400">Aucun site pour le moment</p>
+          <p className="text-slate-600 dark:text-slate-400">Aucun établissement pour le moment</p>
         </div>
       ) : (
         <Table

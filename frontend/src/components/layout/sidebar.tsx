@@ -46,7 +46,7 @@ const clientMainMenu = [
 ];
 
 const clientOrgMenu = [
-  { name: "Sites", href: "/dashboard/sites", icon: MapPin },
+  { name: "Établissements", href: "/dashboard/sites", icon: MapPin },
   { name: "Utilisateurs", href: "/dashboard/users", icon: Users },
 ];
 

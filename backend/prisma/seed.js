@@ -75,7 +75,7 @@ async function main() {
       maxSites: 1,
       maxUsers: 3,
       maxMonthlyFeedbacks: 1000,
-      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // +14 jours
+      trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // +7 jours
     },
     {
       name: 'Hôpital Principal Dakar',

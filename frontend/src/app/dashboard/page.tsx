@@ -51,7 +51,7 @@ function PlatformDashboard({ firstName }: { firstName: string }) {
       bg: 'bg-primary-50 dark:bg-primary-900/20',
     },
     {
-      label: 'Sites',
+      label: 'Établissements',
       value: platform?.sites.total ?? 0,
       sub: `${platform?.sites.active ?? 0} actifs`,
       icon: MapPin,

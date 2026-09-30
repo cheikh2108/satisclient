@@ -53,7 +53,7 @@ export class OrganizationsController {
     description:
       'Seuls les super_admin peuvent créer des organisations. ' +
       'Le slug est généré automatiquement. ' +
-      'Le trial commence automatiquement (14 jours).',
+      'Le trial commence automatiquement (7 jours).',
   })
   @ApiResponse({
     status: 201,

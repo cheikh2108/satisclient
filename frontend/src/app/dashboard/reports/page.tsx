@@ -53,9 +53,9 @@ const availableReports: Report[] = [
   },
   {
     id: '3',
-    name: 'Performance Sites',
+    name: 'Performance établissements',
     type: 'SITE',
-    description: 'Comparatif de performance entre tous les sites',
+    description: 'Comparatif de performance entre tous les établissements',
     format: 'PDF',
     icon: TrendingUp,
     color: 'blue',
@@ -197,7 +197,7 @@ export default function ReportsPage() {
         <StatCard label="Feedbacks (30j)" value={(feedbackStats?.total ?? 0).toString()} change={(feedbackStats?.total??0)>0 ? `${Math.round(((feedbackStats as any)?.bySentiment?.positive??0)/(feedbackStats?.total??1)*100)}%` : '—'} isPositive />
         <StatCard label="Réclamations (30j)" value={(rclStats?.total ?? 0).toString()} change={(rclStats?.total??0)>0 ? `${Math.round(((rclStats?.byStatus?.resolved??0)+(rclStats?.byStatus?.closed??0))/(rclStats?.total??1)*100)}%` : '—'} isPositive />
         <StatCard label="Scans QR (total)" value={(qrStats?.totalScans ?? 0).toLocaleString('fr-FR')} change={(qrStats?.totalQrCodes??0)>0 ? `${Math.round(((qrStats?.activeQrCodes??0)/Math.max(qrStats?.totalQrCodes??1,1))*100)}%` : '—'} isPositive />
-        <StatCard label="Sites actifs" value={(siteStats?.active ?? 0).toString()} change={(siteStats?.total??0)>0 ? `${Math.round(((siteStats?.active??0)/Math.max(siteStats?.total??1,1))*100)}%` : '—'} isPositive />
+        <StatCard label="Établissements actifs" value={(siteStats?.active ?? 0).toString()} change={(siteStats?.total??0)>0 ? `${Math.round(((siteStats?.active??0)/Math.max(siteStats?.total??1,1))*100)}%` : '—'} isPositive />
       </div>
 
       {/* Filters — période et site uniquement */}
@@ -216,7 +216,7 @@ export default function ReportsPage() {
           <Select
             label="Site"
             options={[
-              { value: '', label: 'Tous les sites' },
+              { value: '', label: 'Tous les établissements' },
               ...(sitesData?.data || []).map((s) => ({ value: s.id, label: s.name })),
             ]}
             value={selectedSite}

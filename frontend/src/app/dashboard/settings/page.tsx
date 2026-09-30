@@ -189,7 +189,7 @@ function SubscriptionTab({
           Utilisation des quotas
         </h2>
         <QuotaBar
-          label="Sites"
+          label="Établissements"
           used={usage.limits.sites.used}
           max={usage.limits.sites.max}
         />

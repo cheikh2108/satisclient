@@ -41,7 +41,6 @@ export default function LandingPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const featuresInView = useInView();
   const stepsInView = useInView();
-  const statsInView = useInView();
 
   // Hero fade-in on mount
   useEffect(() => {
@@ -156,13 +155,13 @@ export default function LandingPage() {
           <div className="max-w-3xl" ref={heroRef}>
             <div data-hero className="inline-flex items-center gap-2 bg-[#f5f0e8] text-[#3a5a40] px-3 py-1.5 rounded-lg text-sm font-medium mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-[#3a5a40]" />
-              Conçu pour l'Afrique de l'Ouest francophone
+              Conçu pour l&apos;Afrique de l&apos;Ouest francophone
             </div>
             <h1 data-hero className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#0a0a0a] mb-6 leading-[1.1]">
-              Gérez les feedbacks et réclamations de tous vos sites, depuis une seule plateforme
+              Gérez les feedbacks et réclamations de tous vos établissements, depuis une seule plateforme
             </h1>
             <p data-hero className="text-lg sm:text-xl text-[#4a4a4a] mb-8 leading-relaxed max-w-2xl">
-              SatisClient centralise les retours clients, automatise le suivi des réclamations et mesure la satisfaction en temps réel. Conçu pour les entreprises operant sur plusieurs sites en Afrique.
+              SatisClient centralise les retours clients, automatise le suivi des réclamations et mesure la satisfaction en temps réel. Conçu pour les entreprises opérant sur plusieurs établissements en Afrique.
             </p>
             <div data-hero className="flex flex-col sm:flex-row gap-3">
               <Link
@@ -176,7 +175,7 @@ export default function LandingPage() {
                 href="#fonctionnalites"
                 className="inline-flex items-center justify-center border border-[#3a5a40] text-[#3a5a40] px-6 py-3 rounded-lg font-semibold hover:bg-[#f5f0e8] transition-colors"
               >
-                Voir la demo
+                Voir la démo
               </Link>
             </div>
           </div>
@@ -209,7 +208,7 @@ export default function LandingPage() {
                     { label: 'Feedbacks', value: '1 248', color: '#3a5a40' },
                     { label: 'Réclamations', value: '23', color: '#c8a96e' },
                     { label: 'Satisfaction', value: '87%', color: '#3a5a40' },
-                    { label: 'Sites actifs', value: '8', color: '#4a4a4a' },
+                    { label: 'Établissements', value: '8', color: '#4a4a4a' },
                   ].map((stat) => (
                     <div key={stat.label} className="bg-[#fafaf8] border border-[#e8e3d9] rounded-lg p-3">
                       <div className="text-xs text-[#8a8a8a] mb-1">{stat.label}</div>
@@ -235,7 +234,7 @@ export default function LandingPage() {
                     {[
                       { label: 'Urgentes', width: '20%', color: '#ef4444' },
                       { label: 'En cours', width: '55%', color: '#c8a96e' },
-                      { label: 'Resolues', width: '80%', color: '#3a5a40' },
+                      { label: 'Résolues', width: '80%', color: '#3a5a40' },
                     ].map((item) => (
                       <div key={item.label} className="mb-2">
                         <div className="flex justify-between text-xs text-[#8a8a8a] mb-0.5">
@@ -263,7 +262,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             {[
               { icon: Clock, value: '7 jours', label: "d'essai gratuit, sans carte bancaire" },
-              { icon: Building2, value: '5 minutes', label: 'pour configurer votre premier site' },
+              { icon: Building2, value: '5 minutes', label: 'pour configurer votre premier établissement' },
               { icon: Users, value: '6 rôles', label: 'utilisateurs avec permissions granulaires' },
               { icon: Download, value: 'PDF & Excel', label: 'Rapports exportables en un clic' },
             ].map((stat) => (
@@ -287,26 +286,26 @@ export default function LandingPage() {
               Ce qui se passe sans SatisClient
             </h2>
             <p className="text-[#6a6a6a] text-lg">
-              Les entreprises multi-sites perdent de la visibilite sur la satisfaction de leurs clients. Les problemes s'accumulent, souvent en silence.
+              Les entreprises multi-établissements perdent de la visibilité sur la satisfaction de leurs clients. Les problèmes s&apos;accumulent, souvent en silence.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               {
-                title: 'Des réclamations sans reponse',
-                desc: 'Sans systeme de suivi, les réclamations restent sans reponse faute de responsable identifie et de delai impose.',
+                title: 'Des réclamations sans réponse',
+                desc: 'Sans système de suivi, les réclamations restent sans réponse faute de responsable identifié et de délai imposé.',
               },
               {
                 title: 'Impossible de comparer vos agences',
-                desc: "Chaque site gere ses retours de maniere independante. Impossible de savoir quelle agence performe mieux ni pourquoi.",
+                desc: 'Chaque établissement gère ses retours de manière indépendante. Impossible de savoir quelle agence performe mieux ni pourquoi.',
               },
               {
                 title: 'Les alertes arrivent trop tard',
-                desc: "Vous apprenez qu'un client est mecontent apres qu'il soit parti, quand l'avis negatif est deja public.",
+                desc: "Vous apprenez qu'un client est mécontent après qu'il soit parti, quand l'avis négatif est déjà public.",
               },
               {
                 title: 'Les équipes terrain sans outils',
-                desc: "Vos responsables de site n'ont pas de moyen simple pour remonter les problemes ni consulter les tendances de leur emplacement.",
+                desc: "Vos responsables d'établissement n'ont pas de moyen simple pour remonter les problèmes ni consulter les tendances de leur emplacement.",
               },
             ].map((problem) => (
               <div
@@ -332,7 +331,7 @@ export default function LandingPage() {
               Tout ce dont vous avez besoin
             </h2>
             <p className="text-[#6a6a6a] text-lg">
-              Six modules intégrés pour couvrir l'intégralité du cycle de gestion de la satisfaction client.
+              Six modules intégrés pour couvrir l&apos;intégralité du cycle de gestion de la satisfaction client.
             </p>
           </div>
           <div ref={featuresInView.ref} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -340,32 +339,32 @@ export default function LandingPage() {
               {
                 icon: MessageSquare,
                 title: 'Feedbacks multi-canaux',
-                desc: 'Collectez les avis via QR code, formulaire web, email ou integration in-app. Tous les retours arrives dans un seul tableau de bord.',
+                desc: 'Collectez les avis via QR code, formulaire web, email ou intégration in-app. Tous les retours arrivent dans un seul tableau de bord.',
               },
               {
                 icon: AlertCircle,
                 title: 'Gestion des réclamations',
-                desc: 'Workflow complet avec assignation, SLA automatiques et relances. Chaque reclamation a un responsable et une échéance.',
+                desc: 'Workflow complet avec assignation, SLA automatiques et relances. Chaque réclamation a un responsable et une échéance.',
               },
               {
                 icon: BarChart3,
                 title: 'Analytics temps réel',
-                desc: 'Tableaux de bord par site, par periode, par categorie. Comparez les performances entre vos agences en un coup d\'oeil.',
+                desc: "Tableaux de bord par établissement, par période, par catégorie. Comparez les performances entre vos agences en un coup d'œil.",
               },
               {
                 icon: QrCode,
                 title: 'QR codes par emplacement',
-                desc: 'Generez un QR code unique pour chaque comptoir, salle ou point de service. Les retours sont automatiquement attribues au bon emplacement.',
+                desc: 'Générez un QR code unique pour chaque comptoir, salle ou point de service. Les retours sont automatiquement attribués au bon emplacement.',
               },
               {
                 icon: FileText,
                 title: 'Rapports PDF et Excel',
-                desc: 'Exportez vos donnees de satisfaction en un clic. Formats PDF pour la direction, Excel pour l\'analyse detaillee.',
+                desc: "Exportez vos données de satisfaction en un clic. Formats PDF pour la direction, Excel pour l'analyse détaillée.",
               },
               {
                 icon: Bell,
                 title: 'Alertes sur seuils critiques',
-                desc: 'Recevez une alerte instantanee quand la satisfaction d\'un site chute sous un seuil defini. Réagissez avant que le probleme s\'aggrave.',
+                desc: "Recevez une alerte instantanée quand la satisfaction d'un établissement chute sous un seuil défini. Réagissez avant que le problème s'aggrave.",
               },
             ].map((feature, index) => (
               <div
@@ -389,28 +388,28 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#0a0a0a] mb-4">
-              Opérationnel en moins d'une heure
+              Opérationnel en moins d&apos;une heure
             </h2>
             <p className="text-[#6a6a6a] text-lg">
-              Trois étapes pour déployez SatisClient sur l'ensemble de vos sites.
+              Trois étapes pour déployer SatisClient sur l&apos;ensemble de vos établissements.
             </p>
           </div>
           <div ref={stepsInView.ref} className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
                 step: '01',
-                title: 'Créez vos sites',
-                desc: 'Configurez vos agences, boutiques ou etablissements dans la plateforme. Associez les responsables a chaque site et definissez les categories de feedback pertinentes.',
+                title: 'Configurez vos établissements',
+                desc: 'Ajoutez vos agences, boutiques, établissements ou points de service dans la plateforme. Associez les responsables à chaque établissement et définissez les catégories de feedback pertinentes.',
               },
               {
                 step: '02',
                 title: 'Déployez vos QR codes',
-                desc: 'Chaque emplacement recoit son QR code unique. Imprimez et affichez-les aux points de contact client. Les retours sont attribues automatiquement.',
+                desc: 'Chaque emplacement reçoit son QR code unique. Imprimez et affichez-les aux points de contact client. Les retours sont attribués automatiquement.',
               },
               {
                 step: '03',
                 title: 'Analysez et agissez',
-                desc: 'Consultez le tableau de bord en temps réel, recevez les alertes critiques et exportez vos rapports mensuels pour le comite de direction.',
+                desc: 'Consultez le tableau de bord en temps réel, recevez les alertes critiques et exportez vos rapports mensuels pour le comité de direction.',
               },
             ].map((step, index) => (
               <div key={step.step} className="relative">
@@ -441,7 +440,7 @@ export default function LandingPage() {
               Tarifs transparents
             </h2>
             <p className="text-[#6a6a6a] text-lg">
-              Sans frais cachés. Changez de formule a tout moment. Annulez quand vous voulez.
+              Sans frais cachés. Changez de formule à tout moment. Annulez quand vous voulez.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -451,7 +450,7 @@ export default function LandingPage() {
                 price: '25 000',
                 highlight: false,
                 features: [
-                  '1 site',
+                  '1 établissement',
                   '3 utilisateurs',
                   '1 000 feedbacks/mois',
                   'Rapports basiques',
@@ -465,7 +464,7 @@ export default function LandingPage() {
                 highlight: true,
                 badge: 'Recommandé',
                 features: [
-                  '5 sites',
+                  '5 établissements',
                   '10 utilisateurs',
                   '5 000 feedbacks/mois',
                   'Rapports PDF et Excel',
@@ -479,12 +478,12 @@ export default function LandingPage() {
                 price: '125 000',
                 highlight: false,
                 features: [
-                  '15 sites',
+                  '15 établissements',
                   '30 utilisateurs',
                   'Feedbacks illimités',
                   'SLA garanti',
                   'Accès API',
-                  'Manager dedique',
+                  'Manager dédié',
                 ],
                 cta: 'Commencer',
               },
@@ -493,9 +492,9 @@ export default function LandingPage() {
                 price: 'Sur devis',
                 highlight: false,
                 features: [
-                  'Sites illimites',
-                  'Utilisateurs illimites',
-                  'Feedbacks illimites',
+                  'Établissements illimités',
+                  'Utilisateurs illimités',
+                  'Feedbacks illimités',
                   'Déploiement sur site possible',
                   'Formation incluse',
                   'Support 24/7',
@@ -555,7 +554,7 @@ export default function LandingPage() {
             ))}
           </div>
           <p className="text-center text-sm text-[#8a8a8a] mt-6">
-            Tous les plans incluent 7 jours d'essai gratuit. Aucune carte bancaire requise.
+            Tous les plans incluent 7 jours d&apos;essai gratuit. Aucune carte bancaire requise.
           </p>
         </div>
       </section>
@@ -567,7 +566,7 @@ export default function LandingPage() {
             Prêt à centraliser vos feedbacks ?
           </h2>
           <p className="text-[#a8c8ae] text-lg mb-8">
-            Démarrez votre essai gratuit aujourd'hui. Configurez votre premier site en cinq minutes, sans engagement ni carte bancaire.
+            Démarrez votre essai gratuit aujourd&apos;hui. Configurez votre premier établissement en cinq minutes, sans engagement ni carte bancaire.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
@@ -581,7 +580,7 @@ export default function LandingPage() {
               href="mailto:contact@satisclient.sn"
               className="inline-flex items-center justify-center border border-[#a8c8ae] text-[#a8c8ae] px-6 py-3 rounded-lg font-semibold hover:bg-[#2d4731] hover:text-white hover:border-white transition-colors"
             >
-              Contacter l'equipe
+              Contacter l&apos;équipe
             </a>
           </div>
         </div>
@@ -599,12 +598,12 @@ export default function LandingPage() {
                 <span className="font-bold text-[#0a0a0a] tracking-tight">SatisClient</span>
               </div>
               <p className="text-xs text-[#8a8a8a] max-w-xs">
-                Plateforme de gestion de la satisfaction client pour les entreprises d'Afrique de l'Ouest.
+                Plateforme de gestion de la satisfaction client pour les entreprises d&apos;Afrique de l&apos;Ouest.
               </p>
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               <Link href="/privacy" className="text-sm text-[#6a6a6a] hover:text-[#3a5a40] transition-colors">
-                Politique de confidentialite
+                Politique de confidentialité
               </Link>
               <Link href="/cgu" className="text-sm text-[#6a6a6a] hover:text-[#3a5a40] transition-colors">
                 CGU
@@ -616,7 +615,7 @@ export default function LandingPage() {
           </div>
           <div className="mt-8 pt-6 border-t border-[#e8e3d9]">
             <p className="text-xs text-[#8a8a8a]">
-              SatisClient &copy; {new Date().getFullYear()} - Tous droits reserves
+              SatisClient &copy; {new Date().getFullYear()} — Tous droits réservés
             </p>
           </div>
         </div>
