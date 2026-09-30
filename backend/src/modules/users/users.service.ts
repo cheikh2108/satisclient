@@ -63,7 +63,43 @@ export class UsersService {
     return { data, meta: { total, page: Math.floor(skip / take) + 1, pageSize: take } };
   }
 
-  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; phone?: string; twoFactorEnabled?: boolean }) {
+  async findPlatformAdmins(params?: { skip?: number; take?: number }) {
+    const { skip = 0, take = 50 } = params ?? {};
+    const where = {
+      role: 'org_admin' as const,
+      deletedAt: null,
+      organization: { isPlatform: false, deletedAt: null },
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          status: true,
+          organizationId: true,
+          lastLoginAt: true,
+          createdAt: true,
+          organization: { select: { name: true, slug: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return { data, meta: { total, page: Math.floor(skip / take) + 1, pageSize: take } };
+  }
+
+  async updateProfile(
+    userId: string,
+    data: { firstName?: string; lastName?: string; phone?: string; twoFactorEnabled?: boolean },
+  ) {
     return this.prisma.user.update({
       where: { id: userId },
       data,
@@ -81,7 +117,10 @@ export class UsersService {
   }
 
   async updatePreferences(userId: string, preferences: Record<string, unknown>) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { preferences: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { preferences: true },
+    });
     const current = (user?.preferences as Record<string, unknown>) ?? {};
     const merged = { ...current, ...preferences };
     return this.prisma.user.update({
@@ -108,26 +147,46 @@ export class UsersService {
 
   async getPlatformStats() {
     const [
-      totalOrgs, activeOrgs, trialOrgs, suspiredOrgs,
-      totalUsers, activeUsers, pendingUsers,
-      totalSites, activeSites,
-      totalFeedbacks, totalComplaints,
+      totalOrgs,
+      activeOrgs,
+      trialOrgs,
+      suspiredOrgs,
+      totalUsers,
+      activeUsers,
+      pendingUsers,
+      totalSites,
+      activeSites,
+      totalFeedbacks,
+      totalComplaints,
     ] = await Promise.all([
-      this.prisma.organization.count(),
-      this.prisma.organization.count({ where: { subscriptionStatus: 'active' } }),
-      this.prisma.organization.count({ where: { subscriptionStatus: 'trial' } }),
-      this.prisma.organization.count({ where: { subscriptionStatus: 'suspended' } }),
-      this.prisma.user.count({ where: { deletedAt: null } }),
-      this.prisma.user.count({ where: { status: 'active', deletedAt: null } }),
-      this.prisma.user.count({ where: { status: 'pending', deletedAt: null } }),
-      this.prisma.site.count(),
-      this.prisma.site.count({ where: { isActive: true } }),
-      this.prisma.feedback.count(),
-      this.prisma.complaint.count(),
+      this.prisma.organization.count({ where: { isPlatform: false } }),
+      this.prisma.organization.count({
+        where: { isPlatform: false, subscriptionStatus: 'active' },
+      }),
+      this.prisma.organization.count({ where: { isPlatform: false, subscriptionStatus: 'trial' } }),
+      this.prisma.organization.count({
+        where: { isPlatform: false, subscriptionStatus: 'suspended' },
+      }),
+      this.prisma.user.count({ where: { deletedAt: null, organization: { isPlatform: false } } }),
+      this.prisma.user.count({
+        where: { status: 'active', deletedAt: null, organization: { isPlatform: false } },
+      }),
+      this.prisma.user.count({
+        where: { status: 'pending', deletedAt: null, organization: { isPlatform: false } },
+      }),
+      this.prisma.site.count({ where: { organization: { isPlatform: false } } }),
+      this.prisma.site.count({ where: { isActive: true, organization: { isPlatform: false } } }),
+      this.prisma.feedback.count({ where: { organization: { isPlatform: false } } }),
+      this.prisma.complaint.count({ where: { organization: { isPlatform: false } } }),
     ]);
 
     return {
-      organizations: { total: totalOrgs, active: activeOrgs, trial: trialOrgs, suspended: suspiredOrgs },
+      organizations: {
+        total: totalOrgs,
+        active: activeOrgs,
+        trial: trialOrgs,
+        suspended: suspiredOrgs,
+      },
       users: { total: totalUsers, active: activeUsers, pending: pendingUsers },
       sites: { total: totalSites, active: activeSites },
       activity: { totalFeedbacks, totalComplaints },
@@ -151,7 +210,7 @@ export class UsersService {
 
     const adminRoles = ['super_admin', 'org_admin'];
     const admins = byRole
-      .filter(r => adminRoles.includes(r.role))
+      .filter((r) => adminRoles.includes(r.role))
       .reduce((sum, r) => sum + r._count, 0);
 
     return {
@@ -160,7 +219,27 @@ export class UsersService {
       pending,
       suspended,
       admins,
-      byRole: byRole.reduce((acc, r) => ({ ...acc, [r.role]: r._count }), {} as Record<string, number>),
+      byRole: byRole.reduce(
+        (acc, r) => ({ ...acc, [r.role]: r._count }),
+        {} as Record<string, number>,
+      ),
     };
+  }
+
+  async getPlatformAdminStats() {
+    const where = {
+      role: 'org_admin' as const,
+      deletedAt: null,
+      organization: { isPlatform: false, deletedAt: null },
+    };
+
+    const [total, active, pending, suspended] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.count({ where: { ...where, status: 'active' } }),
+      this.prisma.user.count({ where: { ...where, status: 'pending' } }),
+      this.prisma.user.count({ where: { ...where, status: 'suspended' } }),
+    ]);
+
+    return { total, active, pending, suspended, admins: total, byRole: { org_admin: total } };
   }
 }

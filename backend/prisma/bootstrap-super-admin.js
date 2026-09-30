@@ -18,11 +18,13 @@ async function ensurePlatformBootstrap() {
     update: {
       name: process.env.SUPER_ADMIN_ORGANIZATION_NAME || 'SatisClient Platform',
       email,
+      isPlatform: true,
     },
     create: {
       name: process.env.SUPER_ADMIN_ORGANIZATION_NAME || 'SatisClient Platform',
       slug: 'satisclient-platform',
       email,
+      isPlatform: true,
       subscriptionPlan: 'business',
       subscriptionStatus: 'active',
       maxSites: 20,

@@ -116,6 +116,7 @@ model Organization {
   slug      String             @unique
   email     String
   phone     String?
+  isPlatform Boolean           @default(false) @map("is_platform")
 
   // Branding
   logoUrl        String?        @map("logo_url")

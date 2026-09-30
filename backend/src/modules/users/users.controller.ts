@@ -68,6 +68,9 @@ export class UsersController {
   @Get('stats')
   @ApiOperation({ summary: 'Statistiques utilisateurs' })
   async getStats(@CurrentUser() user: JwtUser) {
+    if (user.role === 'super_admin') {
+      return this.usersService.getPlatformAdminStats();
+    }
     return this.usersService.getStats(user.organizationId);
   }
 
@@ -82,6 +85,9 @@ export class UsersController {
     @Query('take', new DefaultValuePipe(50), ParseIntPipe) take?: number,
     @Query('role') role?: string,
   ) {
+    if (user.role === 'super_admin') {
+      return this.usersService.findPlatformAdmins({ skip, take });
+    }
     return this.usersService.findAll(user.organizationId, { skip, take, role });
   }
 }

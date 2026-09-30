@@ -23,9 +23,7 @@ export class OrganizationsService {
    * - Initialise le trial (7 jours)
    * - Configure les limites selon le plan
    */
-  async create(
-    createDto: CreateOrganizationDto,
-  ): Promise<OrganizationResponseDto> {
+  async create(createDto: CreateOrganizationDto): Promise<OrganizationResponseDto> {
     const slug = this.generateSlug(createDto.name);
 
     // Vérifier si le slug existe déjà
@@ -34,9 +32,7 @@ export class OrganizationsService {
     });
 
     if (existing) {
-      throw new ConflictException(
-        `Une organisation avec ce nom existe déjà (slug: ${slug})`,
-      );
+      throw new ConflictException(`Une organisation avec ce nom existe déjà (slug: ${slug})`);
     }
 
     // Vérifier si l'email existe déjà
@@ -45,15 +41,11 @@ export class OrganizationsService {
     });
 
     if (existingEmail) {
-      throw new ConflictException(
-        `Une organisation avec cet email existe déjà`,
-      );
+      throw new ConflictException(`Une organisation avec cet email existe déjà`);
     }
 
     // Calculer les limites selon le plan
-    const limits = this.getPlanLimits(
-      createDto.subscriptionPlan || 'essentialiel',
-    );
+    const limits = this.getPlanLimits(createDto.subscriptionPlan || 'essentialiel');
 
     // Calculer la date de fin du trial (7 jours)
     const trialEndsAt = new Date();
@@ -103,6 +95,7 @@ export class OrganizationsService {
 
     const where: any = {
       deletedAt: null, // Exclure les supprimés (soft delete)
+      isPlatform: false,
     };
 
     if (status) {
@@ -192,10 +185,7 @@ export class OrganizationsService {
   /**
    * Mettre à jour une organisation
    */
-  async update(
-    id: string,
-    updateDto: UpdateOrganizationDto,
-  ): Promise<OrganizationResponseDto> {
+  async update(id: string, updateDto: UpdateOrganizationDto): Promise<OrganizationResponseDto> {
     // Vérifier que l'organisation existe
     await this.findOne(id);
 
@@ -213,9 +203,7 @@ export class OrganizationsService {
       });
 
       if (existing) {
-        throw new ConflictException(
-          `Une organisation avec ce nom existe déjà (slug: ${slug})`,
-        );
+        throw new ConflictException(`Une organisation avec ce nom existe déjà (slug: ${slug})`);
       }
     }
 
@@ -331,9 +319,15 @@ export class OrganizationsService {
       this.prisma.organization.findUnique({
         where: { id: organizationId },
         select: {
-          name: true, subscriptionPlan: true, subscriptionStatus: true,
-          trialEndsAt: true, maxSites: true, maxUsers: true, maxMonthlyFeedbacks: true,
-          subscriptionStartsAt: true, subscriptionEndsAt: true,
+          name: true,
+          subscriptionPlan: true,
+          subscriptionStatus: true,
+          trialEndsAt: true,
+          maxSites: true,
+          maxUsers: true,
+          maxMonthlyFeedbacks: true,
+          subscriptionStartsAt: true,
+          subscriptionEndsAt: true,
         },
       }),
       this.prisma.site.count({ where: { organizationId } }),
@@ -349,7 +343,10 @@ export class OrganizationsService {
     if (!org) throw new NotFoundException('Organisation non trouvée');
 
     const daysRemainingTrial = org.trialEndsAt
-      ? Math.max(0, Math.ceil((new Date(org.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      ? Math.max(
+          0,
+          Math.ceil((new Date(org.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+        )
       : null;
 
     return {
