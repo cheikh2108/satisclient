@@ -210,13 +210,12 @@ function SubscriptionTab({
         <div className="rounded-xl border border-[#3a5a40]/30 bg-[#3a5a40]/5 dark:bg-[#3a5a40]/10 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex-1">
             <p className="text-sm font-semibold text-slate-900 dark:text-white">
-              {usage.plan === "pro"
-                ? "Passez à Business"
-                : "Passez à Pro ou Business"}
+              {isTrial
+                ? "Activez votre abonnement"
+                : "Renouvelez votre abonnement"}
             </p>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-              Augmentez vos limites et débloquez toutes les fonctionnalités
-              avancées.
+              Payez la formule {planLabel} et bénéficiez de 30 jours d'accès.
             </p>
           </div>
           {usage.plan === "essentialiel" || usage.plan === "pro" ? (
@@ -229,7 +228,9 @@ function SubscriptionTab({
               <CreditCard className="h-4 w-4" />
               {createCheckout.isPending
                 ? "Préparation..."
-                : "Payer / renouveler"}
+                : isTrial
+                  ? "Payer maintenant"
+                  : "Renouveler l'abonnement"}
             </button>
           ) : (
             <a
