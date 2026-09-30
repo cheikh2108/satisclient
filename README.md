@@ -2,11 +2,11 @@
 
 **Plateforme B2B de gestion de l'expérience client, satisfaction et redevabilité**
 
-> *"Votre avis améliore nos services"*
+> _"Votre avis améliore nos services"_
 
 [![Version](https://img.shields.io/badge/version-1.0.0--dev-blue.svg)](https://github.com/cheikh2108/satisclient)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-En%20développement-yellow.svg)]()
+[![Status](https://img.shields.io/badge/status-En%20développement-yellow.svg)](<>)
 
 > **✨ État actuel:** Infrastructure technique complète avec PostgreSQL natif, sécurité robuste (JWT, Encryption, Rate limiting), 15 tables BDD créées avec données de test. Backend NestJS et Frontend Next.js configurés et fonctionnels. Développement des modules métier en cours.
 
@@ -19,29 +19,34 @@ SatisClient transforme chaque avis, réclamation ou suggestion en information ex
 ## ✨ Fonctionnalités principales
 
 ### 🌟 Module Satisfaction
+
 - Notation 1-5 étoiles avec critères personnalisables
 - Enquêtes dynamiques (QCM, échelles, texte libre)
 - Analyse de sentiment par IA
 - QR Codes par site/service
 
 ### 📋 Module Réclamations
+
 - Workflow complet (Reçue → Qualifiée → Affectée → En cours → Résolue → Clôturée)
 - Numéro de suivi unique (ex: SAT-2026-000145)
 - Gestion SLA avec escalades automatiques
 - Pièces jointes et traçabilité complète
 
 ### 💡 Module Suggestions
+
 - Collection et classification
 - Affectation et suivi
 - Transformation en actions d'amélioration
 
 ### 📊 Analytics & Reporting
+
 - Tableaux de bord temps réel
 - KPIs: CSAT, NPS, délai moyen, taux résolution
 - Comparaisons multisites
 - Exports PDF, Excel, CSV
 
 ### 🔔 Notifications multi-canaux
+
 - Email (Nodemailer)
 - SMS (Twilio / Africa's Talking)
 - WhatsApp (Twilio API)
@@ -50,6 +55,7 @@ SatisClient transforme chaque avis, réclamation ou suggestion en information ex
 ## 🏗️ Architecture technique
 
 ### Stack (V1)
+
 - **Backend:** NestJS (Node.js + TypeScript)
 - **Frontend:** Next.js 14 (React + TypeScript + App Router)
 - **Database:** PostgreSQL 18 natif Windows
@@ -86,12 +92,12 @@ satisclient/
 
 ## 💰 Formules commerciales
 
-| Formule | Prix/mois | Sites | Users | Fonctionnalités |
-|---------|-----------|-------|-------|-----------------|
-| **Essentiel** | 25 000 FCFA | 1 | 3 | Avis, notation, enquêtes, QR codes |
-| **Pro** | 60 000 FCFA | 5 | 10 | + Réclamations, workflow, SLA, alertes |
-| **Business** | 125 000 FCFA | 15 | 30 | + IA, analytics avancées, API |
-| **Institution** | Sur devis | Illimité | Illimité | + SSO, intégrations custom, sécurité renforcée |
+| Formule         | Prix/mois    | Sites    | Users    | Fonctionnalités                                |
+| --------------- | ------------ | -------- | -------- | ---------------------------------------------- |
+| **Essentiel**   | 25 000 FCFA  | 1        | 3        | Avis, notation, enquêtes, QR codes             |
+| **Pro**         | 60 000 FCFA  | 5        | 10       | + Réclamations, workflow, SLA, alertes         |
+| **Business**    | 125 000 FCFA | 15       | 30       | + IA, analytics avancées, API                  |
+| **Institution** | Sur devis    | Illimité | Illimité | + SSO, intégrations custom, sécurité renforcée |
 
 **Offre de lancement:** 30 jours d'essai gratuits
 
@@ -128,8 +134,9 @@ npm install
 cd backend
 npx prisma generate
 
-# 6. Les tables et données de test sont déjà créées
-# Si besoin de recréer : voir docs/GETTING_STARTED.md
+# 6. Initialiser le bootstrap de production du compte super admin
+# Variables attendues: SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD
+# Optionnel: SUPER_ADMIN_ORGANIZATION_NAME
 
 # 7. Démarrer l'application (backend + frontend)
 cd ..
@@ -142,10 +149,11 @@ npm run dev
 - **API Backend:** http://localhost:3001
 - **API Docs (Swagger):** http://localhost:3001/api/docs
 
-**Comptes de test:**
-- **Admin:** `admin@demo.satisclient.sn` / `Demo123!Pass`
-- **Manager:** `qualite@demo.satisclient.sn` / `Demo123!Pass`
-- **Agent:** `agent@demo.satisclient.sn` / `Demo123!Pass`
+**Compte super admin d’environnement:**
+
+- Configuré via les variables `SUPER_ADMIN_EMAIL` et `SUPER_ADMIN_PASSWORD`
+- Le compte est créé automatiquement avec l’organisation `SatisClient Platform`
+- Aucune donnée de démonstration n’est injectée dans le bootstrap de production
 
 ## 📚 Documentation
 
@@ -162,6 +170,7 @@ npm run dev
 ## 🎯 Roadmap
 
 ### Phase 1: MVP Essentiel (En cours - 6 semaines)
+
 - [x] Architecture définie
 - [x] Schéma base de données (15 tables)
 - [x] Setup projet NestJS + Next.js
@@ -176,6 +185,7 @@ npm run dev
 - [ ] Exports PDF/Excel
 
 ### Phase 2: Formule Pro (6-8 semaines)
+
 - [ ] Module Complaints complet (workflow)
 - [ ] SLA tracking + alertes
 - [ ] Système d'affectation
@@ -185,6 +195,7 @@ npm run dev
 - [ ] Redis (Cache & Queues)
 
 ### Phase 3: Formule Business (6-8 semaines)
+
 - [ ] Analyse sentiment IA (OpenAI)
 - [ ] Escalades automatiques
 - [ ] Rapports planifiés
@@ -193,6 +204,7 @@ npm run dev
 - [ ] Cloud Storage (S3/MinIO)
 
 ### Phase 4: Formule Institution (Sur devis)
+
 - [ ] SSO (SAML, OAuth2)
 - [ ] Intégrations customs
 - [ ] White-labeling
@@ -269,6 +281,7 @@ Voir [Guide de déploiement Dokploy](docs/DEPLOYMENT.md) pour plus de détails.
 Ce projet est développé par **ATAABA Expertise**.
 
 Pour toute contribution:
+
 1. Fork le projet
 2. Créer une branche (`git checkout -b feature/AmazingFeature`)
 3. Commit (`git commit -m 'Add AmazingFeature'`)
@@ -282,6 +295,7 @@ Proprietary - © 2026 ATAABA Expertise. Tous droits réservés.
 ## 📞 Contact
 
 **ATAABA Expertise**
+
 - Email: contact@ataaba.com
 - Site web: https://ataaba.com
 - Support: support@satisclient.sn

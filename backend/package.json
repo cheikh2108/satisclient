@@ -23,7 +23,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "node prisma/bootstrap-super-admin.js",
+    "prisma:seed:dev": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/bull": "^10.1.0",
