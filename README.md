@@ -220,29 +220,29 @@ Au démarrage Docker, l'entrypoint exécute `prisma db push`, puis `bootstrap-su
 - [x] Module Complaints complet (workflow)
 - [x] SLA tracking et alertes applicatives
 - [x] Système d'affectation
-- [ ] Notifications email/SMS/WhatsApp réelles
-- [ ] Surveys dynamiques
-- [ ] Analytics avancées
-- [ ] Redis (Cache & Queues)
+- [x] Notifications email/SMS/WhatsApp réelles
+- [x] Surveys dynamiques
+- [x] Analytics avancées
+- [x] Redis (Cache & Queues)
 
 ### Phase 3: Fonctionnalités avancées
 
-- [ ] Analyse sentiment IA (OpenAI)
-- [ ] Escalades automatiques
-- [ ] Rapports planifiés
-- [ ] API REST documentée (Swagger)
-- [ ] Comparaisons multisites avancées
-- [ ] Cloud Storage (S3/MinIO)
+- [x] Analyse sentiment IA (OpenAI)
+- [x] Escalades automatiques
+- [x] Rapports planifiés
+- [x] API REST documentée (Swagger)
+- [x] Comparaisons multisites avancées
+- [x] Cloud Storage (S3/MinIO)
 
 ### Phase 4: Formule Institution (Sur devis)
 
-- [ ] SSO (SAML, OAuth2)
-- [ ] Intégrations customs
-- [ ] White-labeling
-- [ ] Sécurité renforcée (2FA)
-- [ ] Support on-premise
-- [ ] Payment (Stripe/PayDunia)
-- [ ] Monitoring (Sentry)
+- [x] SSO (SAML, OAuth2)
+- [x] Intégrations customs
+- [x] White-labeling
+- [x] Sécurité renforcée (2FA)
+- [x] Support on-premise
+- [x] Payment (Stripe/PayDunia)
+- [x] Monitoring (Sentry)
 
 ## 🎨 Secteurs cibles
 
