@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import * as React from "react";
+import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ModalProps {
   open: boolean;
@@ -10,7 +10,7 @@ interface ModalProps {
   children: React.ReactNode;
   title?: string;
   description?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  size?: "sm" | "md" | "lg" | "xl" | "full";
   showClose?: boolean;
 }
 
@@ -20,25 +20,25 @@ export function Modal({
   children,
   title,
   description,
-  size = 'md',
+  size = "md",
   showClose = true,
 }: ModalProps) {
   const sizes = {
-    sm: 'w-full max-w-sm',
-    md: 'w-full max-w-full sm:max-w-lg',
-    lg: 'w-full max-w-full sm:max-w-2xl',
-    xl: 'w-full max-w-full sm:max-w-4xl',
-    full: 'w-full max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)]',
+    sm: "w-full max-w-sm",
+    md: "w-full max-w-full sm:max-w-lg",
+    lg: "w-full max-w-full sm:max-w-2xl",
+    xl: "w-full max-w-full sm:max-w-4xl",
+    full: "w-full max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)]",
   };
 
   React.useEffect(() => {
     if (open) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [open]);
 
@@ -55,16 +55,16 @@ export function Modal({
       {/* Modal */}
       <div
         className={cn(
-          'relative border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-[#111111] shadow-2xl',
-          'animate-in slide-in-from-bottom sm:zoom-in-95 duration-200',
-          'max-h-[90vh] flex flex-col',
-          'rounded-t-2xl sm:rounded-2xl',
-          sizes[size]
+          "relative border border-slate-200 dark:border-slate-800/60 bg-white dark:bg-[#111111] shadow-2xl",
+          "animate-in slide-in-from-bottom sm:zoom-in-95 duration-200",
+          "max-h-[90vh] flex flex-col",
+          "rounded-t-2xl sm:rounded-2xl",
+          sizes[size],
         )}
       >
         {/* Header — sticky on mobile */}
         {(title || showClose) && (
-          <div className="sticky top-0 z-10 flex items-start justify-between p-6 border-b border-slate-200 dark:border-slate-800/40 bg-white dark:bg-[#111111] rounded-t-2xl sm:rounded-t-2xl">
+          <div className="sticky top-0 z-10 flex items-start justify-between gap-3 p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800/40 bg-white dark:bg-[#111111] rounded-t-2xl sm:rounded-t-2xl">
             <div>
               {title && (
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -89,7 +89,7 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto p-4 sm:p-6">
           {children}
         </div>
       </div>
@@ -98,13 +98,21 @@ export function Modal({
 }
 
 // Modal footer for actions
-export function ModalFooter({ children, className }: { children: React.ReactNode; className?: string }) {
+export function ModalFooter({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className={cn(
-      'sticky bottom-0 z-10 flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-800/40',
-      'bg-white dark:bg-[#111111]',
-      className
-    )}>
+    <div
+      className={cn(
+        "sticky bottom-0 z-10 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 p-4 sm:p-6 border-t border-slate-200 dark:border-slate-800/40",
+        "bg-white dark:bg-[#111111]",
+        className,
+      )}
+    >
       {children}
     </div>
   );
