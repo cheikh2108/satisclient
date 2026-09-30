@@ -61,7 +61,10 @@ export class ComplaintsController {
   })
   @ApiResponse({ status: 400, description: 'Données invalides' })
   @ApiResponse({ status: 404, description: 'Site non trouvé' })
-  create(@Request() req, @Body() createComplaintDto: CreateComplaintDto): Promise<ComplaintResponseDto> {
+  create(
+    @Request() req,
+    @Body() createComplaintDto: CreateComplaintDto,
+  ): Promise<ComplaintResponseDto> {
     // Forcer l'organizationId depuis le JWT
     const orgId = createComplaintDto.organizationId || req.user?.organizationId;
     return this.complaintsService.create({ ...createComplaintDto, organizationId: orgId });
@@ -118,7 +121,9 @@ export class ComplaintsController {
     @Query('take') take?: number,
     @Query('includeRelations') includeRelations?: boolean,
   ): Promise<ComplaintResponseDto[]> {
-    const orgId = organizationId || (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
+    const orgId =
+      organizationId ||
+      (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
     return this.complaintsService.findAll({
       organizationId: orgId,
       siteId,
@@ -169,8 +174,14 @@ export class ComplaintsController {
     @Query('siteId') siteId?: string,
     @Query('period') period?: string,
   ) {
-    const orgId = organizationId || (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
-    return this.complaintsService.getStats({ organizationId: orgId, siteId, period: period || '30d' });
+    const orgId =
+      organizationId ||
+      (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
+    return this.complaintsService.getStats({
+      organizationId: orgId,
+      siteId,
+      period: period || '30d',
+    });
   }
 
   @Get('ticket/:ticketNumber')
@@ -217,7 +228,12 @@ export class ComplaintsController {
 
   @Post(':id/assign/:userId')
   @UseGuards(JwtAuthGuard, RolesGuard, OrganizationGuard)
-  @Roles(UserRole.super_admin, UserRole.org_admin, UserRole.quality_manager, UserRole.service_manager)
+  @Roles(
+    UserRole.super_admin,
+    UserRole.org_admin,
+    UserRole.quality_manager,
+    UserRole.service_manager,
+  )
   @ApiBearerAuth('JWT')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -225,7 +241,7 @@ export class ComplaintsController {
     description: 'Change automatiquement le statut en ASSIGNED et enregistre la date/heure.',
   })
   @ApiParam({ name: 'id', description: 'UUID de la réclamation' })
-  @ApiParam({ name: 'userId', description: 'UUID de l\'agent' })
+  @ApiParam({ name: 'userId', description: "UUID de l'agent" })
   @ApiResponse({ status: 200, description: 'Réclamation assignée', type: ComplaintResponseDto })
   @ApiResponse({ status: 404, description: 'Réclamation ou utilisateur non trouvé' })
   assign(
@@ -246,10 +262,10 @@ export class ComplaintsController {
   )
   @ApiBearerAuth('JWT')
   @ApiOperation({
-    summary: 'Changer le statut d\'une réclamation',
+    summary: "Changer le statut d'une réclamation",
     description:
       'Valide la transition via FSM (Finite State Machine). ' +
-      'Crée automatiquement une entrée dans l\'historique.',
+      "Crée automatiquement une entrée dans l'historique.",
   })
   @ApiParam({ name: 'id', description: 'UUID de la réclamation' })
   @ApiResponse({ status: 200, description: 'Statut changé', type: ComplaintResponseDto })
@@ -293,13 +309,18 @@ export class ComplaintsController {
 
   @Post(':id/escalate')
   @UseGuards(JwtAuthGuard, RolesGuard, OrganizationGuard)
-  @Roles(UserRole.super_admin, UserRole.org_admin, UserRole.quality_manager, UserRole.service_manager)
+  @Roles(
+    UserRole.super_admin,
+    UserRole.org_admin,
+    UserRole.quality_manager,
+    UserRole.service_manager,
+  )
   @ApiBearerAuth('JWT')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Escalader une réclamation',
     description:
-      'Marque la réclamation comme escaladée et l\'assigne à un superviseur. ' +
+      "Marque la réclamation comme escaladée et l'assigne à un superviseur. " +
       'Utilisé pour les cas critiques ou overdue.',
   })
   @ApiParam({ name: 'id', description: 'UUID de la réclamation' })
@@ -351,7 +372,7 @@ export class ComplaintsController {
   )
   @ApiBearerAuth('JWT')
   @ApiOperation({
-    summary: 'Récupérer l\'historique complet d\'une réclamation',
+    summary: "Récupérer l'historique complet d'une réclamation",
     description:
       'Timeline de toutes les actions: création, assignation, changements de statut, ' +
       'commentaires, résolution, escalade. Ordre chronologique décroissant.',

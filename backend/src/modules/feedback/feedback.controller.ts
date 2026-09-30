@@ -59,9 +59,7 @@ export class FeedbackController {
     status: 404,
     description: 'Site non trouvé',
   })
-  create(
-    @Body() createFeedbackDto: CreateFeedbackDto,
-  ): Promise<FeedbackResponseDto> {
+  create(@Body() createFeedbackDto: CreateFeedbackDto): Promise<FeedbackResponseDto> {
     return this.feedbackService.create(createFeedbackDto);
   }
 
@@ -77,8 +75,7 @@ export class FeedbackController {
   @ApiOperation({
     summary: 'Liste tous les feedbacks',
     description:
-      'Filtre par organisation, site, sentiment, rating, dates. ' +
-      'Pagination disponible.',
+      'Filtre par organisation, site, sentiment, rating, dates. ' + 'Pagination disponible.',
   })
   @ApiQuery({
     name: 'organizationId',
@@ -169,7 +166,9 @@ export class FeedbackController {
     @Query('take') take?: number,
     @Query('includeRelations') includeRelations?: boolean,
   ): Promise<FeedbackResponseDto[]> {
-    const orgId = organizationId || (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
+    const orgId =
+      organizationId ||
+      (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
     return this.feedbackService.findAll({
       organizationId: orgId,
       siteId,
@@ -191,14 +190,21 @@ export class FeedbackController {
   @ApiOperation({ summary: 'Série temporelle des feedbacks par jour' })
   @ApiQuery({ name: 'organizationId', required: false, type: String })
   @ApiQuery({ name: 'siteId', required: false, type: String })
-  @ApiQuery({ name: 'days', required: false, type: Number, description: 'Nombre de jours (défaut: 30)' })
+  @ApiQuery({
+    name: 'days',
+    required: false,
+    type: Number,
+    description: 'Nombre de jours (défaut: 30)',
+  })
   getTimeseries(
     @Request() req,
     @Query('organizationId') organizationId?: string,
     @Query('siteId') siteId?: string,
     @Query('days') days?: string,
   ) {
-    const orgId = organizationId || (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
+    const orgId =
+      organizationId ||
+      (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
     return this.feedbackService.getTimeseries({
       organizationId: orgId,
       siteId,
@@ -213,8 +219,7 @@ export class FeedbackController {
   @ApiOperation({
     summary: 'Statistiques des feedbacks',
     description:
-      'Total, par sentiment, note moyenne, taux de réponse. ' +
-      'Période: 7d, 30d, 90d, 1y.',
+      'Total, par sentiment, note moyenne, taux de réponse. ' + 'Période: 7d, 30d, 90d, 1y.',
   })
   @ApiQuery({
     name: 'organizationId',
@@ -256,7 +261,9 @@ export class FeedbackController {
     @Query('siteId') siteId?: string,
     @Query('period') period?: string,
   ) {
-    const orgId = organizationId || (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
+    const orgId =
+      organizationId ||
+      (req.user?.role === UserRole.super_admin ? undefined : req.user?.organizationId);
     return this.feedbackService.getStats({
       organizationId: orgId,
       siteId,
@@ -291,9 +298,7 @@ export class FeedbackController {
     status: 404,
     description: 'Feedback non trouvé',
   })
-  findOne(
-    @Param('id', new ParseUUIDPipe()) id: string,
-  ): Promise<FeedbackResponseDto> {
+  findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<FeedbackResponseDto> {
     return this.feedbackService.findOne(id);
   }
 
@@ -308,8 +313,7 @@ export class FeedbackController {
   @ApiBearerAuth('JWT')
   @ApiOperation({
     summary: 'Mettre à jour un feedback (traitement simple)',
-    description:
-      'Permet de marquer comme traité et d\'enregistrer les dates de traitement/réponse.',
+    description: "Permet de marquer comme traité et d'enregistrer les dates de traitement/réponse.",
   })
   @ApiParam({
     name: 'id',
@@ -354,9 +358,7 @@ export class FeedbackController {
     status: 404,
     description: 'Feedback non trouvé',
   })
-  remove(
-    @Param('id', new ParseUUIDPipe()) id: string,
-  ): Promise<{ message: string }> {
+  remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<{ message: string }> {
     return this.feedbackService.remove(id);
   }
 }

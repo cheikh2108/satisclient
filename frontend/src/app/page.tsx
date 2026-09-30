@@ -490,7 +490,7 @@ export default function LandingPage() {
               },
               {
                 name: 'Institution',
-                price: 'À partir de 2 500 000 FCFA/an',
+                price: 'Sur devis',
                 highlight: false,
                 features: [
                   'Sites illimites',
