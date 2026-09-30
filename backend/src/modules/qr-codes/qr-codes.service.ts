@@ -324,8 +324,16 @@ export class QrCodesService {
    * Incrémenter compteur de scans
    */
   async incrementScan(code: string): Promise<void> {
+    const qr = await this.prisma.qrCode.findFirst({ where: { code } });
+    if (!qr) {
+      throw new NotFoundException(`QR Code non trouvé (code: ${code})`);
+    }
+    if (!qr.isActive) {
+      throw new BadRequestException('Ce QR code est désactivé');
+    }
+
     await this.prisma.qrCode.update({
-      where: { code },
+      where: { id: qr.id },
       data: {
         scanCount: { increment: 1 },
         lastScannedAt: new Date(),
@@ -338,6 +346,101 @@ export class QrCodesService {
    */
   async incrementFeedback(code: string): Promise<void> {
     this.logger.log({ event: 'qr_code.feedback_incremented', code });
+  }
+
+  /**
+   * Contexte public pour le formulaire feedback (scan QR)
+   * Valide site + QR, incrémente le scan, retourne les infos d'affichage.
+   */
+  async resolvePublicContext(siteParam: string, qrCode?: string) {
+    if (!siteParam?.trim()) {
+      throw new BadRequestException('Paramètre site requis');
+    }
+
+    const site = await this.prisma.site.findFirst({
+      where: {
+        OR: [{ code: siteParam }, { id: siteParam }],
+      },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            logoUrl: true,
+            primaryColor: true,
+            welcomeMessage: true,
+            subscriptionStatus: true,
+          },
+        },
+      },
+    });
+
+    if (!site) {
+      throw new NotFoundException('Établissement introuvable');
+    }
+
+    if (!site.isActive) {
+      throw new BadRequestException('Cet établissement n\'accepte plus de feedbacks');
+    }
+
+    const orgStatus = site.organization.subscriptionStatus;
+    if (orgStatus === 'suspended' || orgStatus === 'expired') {
+      throw new BadRequestException(
+        'Cet établissement n\'accepte plus de feedbacks pour le moment',
+      );
+    }
+
+    let resolvedQrCode: string | null = null;
+
+    if (qrCode) {
+      const qr = await this.prisma.qrCode.findFirst({
+        where: { code: qrCode },
+      });
+
+      if (!qr) {
+        throw new NotFoundException('QR code introuvable');
+      }
+
+      if (!qr.isActive) {
+        throw new BadRequestException('Ce QR code est désactivé');
+      }
+
+      if (qr.siteId && qr.siteId !== site.id) {
+        throw new BadRequestException('QR code non valide pour cet établissement');
+      }
+
+      if (qr.organizationId !== site.organizationId) {
+        throw new BadRequestException('QR code non valide pour cet établissement');
+      }
+
+      if (qr.expiresAt && qr.expiresAt < new Date()) {
+        throw new BadRequestException('Ce QR code a expiré');
+      }
+
+      await this.prisma.qrCode.update({
+        where: { id: qr.id },
+        data: {
+          scanCount: { increment: 1 },
+          lastScannedAt: new Date(),
+        },
+      });
+
+      resolvedQrCode = qr.code;
+    }
+
+    return {
+      siteId: site.id,
+      siteName: site.name,
+      siteCode: site.code,
+      organizationId: site.organization.id,
+      organizationName: site.organization.name,
+      logoUrl: site.organization.logoUrl,
+      primaryColor: site.organization.primaryColor || '#3a5a40',
+      welcomeMessage:
+        site.organization.welcomeMessage ||
+        'Votre avis compte. Partagez votre expérience en quelques secondes.',
+      qrCode: resolvedQrCode,
+    };
   }
 
   /**

@@ -27,11 +27,16 @@ export interface Feedback {
 
 export interface CreateFeedbackDto {
   siteId: string;
+  organizationId: string;
   overallRating: number;
   comment?: string;
   isAnonymous?: boolean;
   respondentName?: string;
   respondentEmail?: string;
+  respondentPhone?: string;
+  feedbackChannel?: string;
+  qrCode?: string;
+  needsResponse?: boolean;
 }
 
 export interface UpdateFeedbackDto {
