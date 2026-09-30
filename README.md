@@ -167,7 +167,7 @@ npm run dev
 
 L'organisation `SatisClient Platform` est une organisation technique marquée comme plateforme. Elle est exclue des statistiques commerciales, des listes clients et des quotas des organisations clientes.
 
-### Variables de production
+### Variables Dokploy
 
 Le service `backend` doit recevoir ces variables dans Dokploy :
 
@@ -181,6 +181,7 @@ FRONTEND_URL=https://app.example.com
 SUPER_ADMIN_EMAIL=admin@example.com
 SUPER_ADMIN_PASSWORD=...
 SUPER_ADMIN_ORGANIZATION_NAME=SatisClient Platform
+# Sandbox DexPay
 DEXPAY_API_KEY=pk_test_...
 DEXPAY_API_SECRET=sk_test_...
 DEXPAY_SANDBOX=true
@@ -199,6 +200,24 @@ Les organisations peuvent payer ou renouveler leur formule mensuelle depuis l'on
 - Utiliser les clés `pk_test_*` et `sk_test_*` en sandbox, puis les clés `pk_live_*` et `sk_live_*` en production.
 - Régler `DEXPAY_SANDBOX=true` avec les clés de test, puis `DEXPAY_SANDBOX=false` avec les clés de production.
 - Webhook attendu : `POST /api/billing/dexpay/webhook`.
+
+### Passage en production DexPay
+
+Après validation complète en sandbox, remplacer uniquement les variables DexPay dans Dokploy :
+
+```env
+DEXPAY_API_KEY=pk_live_...
+DEXPAY_API_SECRET=sk_live_...
+DEXPAY_SANDBOX=false
+```
+
+Puis redéployer le backend et effectuer un petit paiement réel de contrôle. L'URL webhook reste la même :
+
+```text
+https://votre-domaine.tld/api/billing/dexpay/webhook
+```
+
+Ne jamais placer `sk_test_*` ou `sk_live_*` dans le frontend, le dépôt Git ou la documentation.
 
 ## 📚 Documentation
 
