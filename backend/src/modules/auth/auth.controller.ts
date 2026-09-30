@@ -28,7 +28,7 @@ function setAuthCookies(res: Response, accessToken: string, refreshToken: string
   res.cookie('access_token', accessToken, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'strict',
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: ACCESS_MAX_AGE,
     path: '/',
   });
@@ -36,7 +36,7 @@ function setAuthCookies(res: Response, accessToken: string, refreshToken: string
   res.cookie('refresh_token', refreshToken, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'strict',
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: REFRESH_MAX_AGE,
     path: '/api/auth',
   });
