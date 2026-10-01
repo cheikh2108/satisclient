@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import {
   ClipboardList,
@@ -74,6 +74,7 @@ export default function SurveysPage() {
   const [questions, setQuestions] = useState<DraftQuestion[]>([
     createQuestion(1),
   ]);
+  const submitLockRef = useRef(false);
 
   const sites = sitesData?.data || [];
   const packs = (usage?.campaignPacks || []).filter(
@@ -141,6 +142,8 @@ export default function SurveysPage() {
   };
 
   const handleSubmit = () => {
+    if (submitLockRef.current) return;
+
     if (!organizationId || !title.trim() || selectedSites.length === 0) {
       addToast({
         type: "error",
@@ -191,6 +194,7 @@ export default function SurveysPage() {
     }
 
     if (editingSurvey) {
+      submitLockRef.current = true;
       updateSurvey.mutate(
         {
           id: editingSurvey.id,
@@ -202,11 +206,17 @@ export default function SurveysPage() {
             questions: normalizedQuestions,
           },
         },
-        { onSuccess: closeModal },
+        {
+          onSuccess: closeModal,
+          onSettled: () => {
+            submitLockRef.current = false;
+          },
+        },
       );
       return;
     }
 
+    submitLockRef.current = true;
     createSurvey.mutate(
       {
         organizationId,
@@ -218,7 +228,12 @@ export default function SurveysPage() {
         questions: normalizedQuestions,
         settings: { allowAnonymous: true },
       },
-      { onSuccess: closeModal },
+      {
+        onSuccess: closeModal,
+        onSettled: () => {
+          submitLockRef.current = false;
+        },
+      },
     );
   };
 
