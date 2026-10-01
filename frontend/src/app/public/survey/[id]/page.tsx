@@ -1,6 +1,13 @@
 "use client";
 
-import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2, Send } from "lucide-react";
 import {
@@ -21,11 +28,16 @@ function SurveyForm() {
   );
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const scanSentRef = useRef<string | null>(null);
 
   useEffect(() => {
     publicApi
       .getSurvey(params.id, qr)
       .then((data) => {
+        if (qr && scanSentRef.current !== qr) {
+          scanSentRef.current = qr;
+          void publicApi.registerQrScan(qr);
+        }
         setSurvey(data);
         setStep("form");
       })

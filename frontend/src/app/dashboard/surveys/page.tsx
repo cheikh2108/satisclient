@@ -79,6 +79,7 @@ export default function SurveysPage() {
   const packs = (usage?.campaignPacks || []).filter(
     (pack: any) => pack.remaining > 0 && new Date(pack.expiresAt) > new Date(),
   );
+  const requiresCampaignPack = surveyType !== "continuous";
 
   const resetForm = () => {
     setEditingSurvey(null);
@@ -156,11 +157,12 @@ export default function SurveysPage() {
       });
       return;
     }
-    if (!editingSurvey && !campaignPackId) {
+    if (!editingSurvey && requiresCampaignPack && !campaignPackId) {
       addToast({
         type: "error",
         title: "Pack campagne requis",
-        description: "Sélectionnez un pack actif pour créer cette enquête.",
+        description:
+          "Les enquêtes ponctuelles et récurrentes consomment un crédit campagne.",
       });
       return;
     }
@@ -212,7 +214,7 @@ export default function SurveysPage() {
         description: description.trim() || undefined,
         surveyType: surveyType as any,
         targetSiteIds: selectedSites,
-        campaignPackId,
+        campaignPackId: requiresCampaignPack ? campaignPackId : undefined,
         questions: normalizedQuestions,
         settings: { allowAnonymous: true },
       },
@@ -374,9 +376,12 @@ export default function SurveysPage() {
               value={surveyType}
               onChange={setSurveyType}
               options={[
-                { value: "one_time", label: "Ponctuelle" },
-                { value: "recurring", label: "Récurrente" },
-                { value: "continuous", label: "Continue" },
+                { value: "one_time", label: "Ponctuelle · campagne payante" },
+                { value: "recurring", label: "Récurrente · campagne payante" },
+                {
+                  value: "continuous",
+                  label: "Continue · incluse dans l’abonnement",
+                },
               ]}
             />
           </div>
@@ -388,9 +393,9 @@ export default function SurveysPage() {
             rows={3}
           />
 
-          {!editingSurvey && (
+          {!editingSurvey && requiresCampaignPack && (
             <Select
-              label="Pack campagne"
+              label="Crédit campagne"
               value={campaignPackId}
               onChange={setCampaignPackId}
               required
@@ -399,8 +404,15 @@ export default function SurveysPage() {
                 value: pack.id,
                 label: `${pack.packageCode} · ${pack.remaining} crédit(s) restant(s) · expire le ${new Date(pack.expiresAt).toLocaleDateString("fr-FR")}`,
               }))}
-              helperText="Un crédit est consommé uniquement si la création réussit."
+              helperText="Un crédit est consommé uniquement si la création réussit. Les packs sont achetés par l’organisation."
             />
+          )}
+
+          {!editingSurvey && !requiresCampaignPack && (
+            <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              Cette enquête continue est couverte par l’abonnement de votre
+              organisation et ne consomme pas de crédit campagne.
+            </p>
           )}
 
           <div>

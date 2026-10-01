@@ -1,57 +1,59 @@
-'use client';
+"use client";
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Star, CheckCircle2, AlertCircle, Loader2, Send } from 'lucide-react';
-import {
-  publicApi,
-  type PublicFeedbackContext,
-} from '@/lib/api/public';
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Star, CheckCircle2, AlertCircle, Loader2, Send } from "lucide-react";
+import { publicApi, type PublicFeedbackContext } from "@/lib/api/public";
 
-type Step = 'loading' | 'form' | 'success' | 'error';
+type Step = "loading" | "form" | "success" | "error";
 
 function PublicFeedbackForm() {
   const searchParams = useSearchParams();
-  const siteParam = searchParams.get('site') || '';
-  const qrParam = searchParams.get('qr');
+  const siteParam = searchParams.get("site") || "";
+  const qrParam = searchParams.get("qr");
 
-  const [step, setStep] = useState<Step>('loading');
+  const [step, setStep] = useState<Step>("loading");
   const [context, setContext] = useState<PublicFeedbackContext | null>(null);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
-  const [comment, setComment] = useState('');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [comment, setComment] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [wantContact, setWantContact] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState("");
+  const scanSentRef = useRef<string | null>(null);
 
-  const accent = context?.primaryColor || '#3a5a40';
+  const accent = context?.primaryColor || "#3a5a40";
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       if (!siteParam) {
-        setErrorMessage('Lien invalide : établissement manquant.');
-        setStep('error');
+        setErrorMessage("Lien invalide : établissement manquant.");
+        setStep("error");
         return;
       }
 
       try {
         const ctx = await publicApi.getFeedbackContext(siteParam, qrParam);
         if (cancelled) return;
+        if (qrParam && scanSentRef.current !== qrParam) {
+          scanSentRef.current = qrParam;
+          void publicApi.registerQrScan(qrParam);
+        }
         setContext(ctx);
-        setStep('form');
+        setStep("form");
       } catch (err: any) {
         if (cancelled) return;
         const msg =
           err?.response?.data?.message ||
-          'Impossible d\'ouvrir ce formulaire. Vérifiez le QR code.';
-        setErrorMessage(Array.isArray(msg) ? msg.join(', ') : msg);
-        setStep('error');
+          "Impossible d'ouvrir ce formulaire. Vérifiez le QR code.";
+        setErrorMessage(Array.isArray(msg) ? msg.join(", ") : msg);
+        setStep("error");
       }
     }
 
@@ -62,8 +64,15 @@ function PublicFeedbackForm() {
   }, [siteParam, qrParam]);
 
   const ratingLabel = useMemo(() => {
-    const labels = ['', 'Très insatisfait', 'Insatisfait', 'Moyen', 'Satisfait', 'Excellent'];
-    return labels[hovered || rating] || 'Choisissez une note';
+    const labels = [
+      "",
+      "Très insatisfait",
+      "Insatisfait",
+      "Moyen",
+      "Satisfait",
+      "Excellent",
+    ];
+    return labels[hovered || rating] || "Choisissez une note";
   }, [hovered, rating]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,7 +80,7 @@ function PublicFeedbackForm() {
     if (!context || rating < 1) return;
 
     setSubmitting(true);
-    setSubmitError('');
+    setSubmitError("");
 
     try {
       const isAnonymous = !name.trim() && !email.trim();
@@ -83,22 +92,22 @@ function PublicFeedbackForm() {
         isAnonymous,
         respondentName: name.trim() || undefined,
         respondentEmail: email.trim() || undefined,
-        feedbackChannel: context.qrCode ? 'qr_code' : 'web',
+        feedbackChannel: context.qrCode ? "qr_code" : "web",
         qrCode: context.qrCode || undefined,
         needsResponse: wantContact,
       });
-      setStep('success');
+      setStep("success");
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ||
-        'Envoi impossible. Réessayez dans un instant.';
-      setSubmitError(Array.isArray(msg) ? msg.join(', ') : msg);
+        "Envoi impossible. Réessayez dans un instant.";
+      setSubmitError(Array.isArray(msg) ? msg.join(", ") : msg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (step === 'loading') {
+  if (step === "loading") {
     return (
       <Shell accent={accent}>
         <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -109,19 +118,23 @@ function PublicFeedbackForm() {
     );
   }
 
-  if (step === 'error') {
+  if (step === "error") {
     return (
       <Shell accent={accent}>
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
           <AlertCircle className="mx-auto h-10 w-10 text-red-500 mb-3" />
-          <h1 className="text-lg font-semibold text-[#0a0a0a] mb-2">Lien indisponible</h1>
-          <p className="text-sm text-[#4a4a4a] leading-relaxed">{errorMessage}</p>
+          <h1 className="text-lg font-semibold text-[#0a0a0a] mb-2">
+            Lien indisponible
+          </h1>
+          <p className="text-sm text-[#4a4a4a] leading-relaxed">
+            {errorMessage}
+          </p>
         </div>
       </Shell>
     );
   }
 
-  if (step === 'success') {
+  if (step === "success") {
     return (
       <Shell accent={accent} orgName={context?.organizationName}>
         <div className="rounded-2xl border border-[#e8e3d9] bg-white p-8 text-center shadow-sm">
@@ -133,24 +146,32 @@ function PublicFeedbackForm() {
           </div>
           <h1 className="text-2xl font-bold text-[#0a0a0a] mb-2">Merci !</h1>
           <p className="text-[#4a4a4a] leading-relaxed">
-            Votre avis a bien été transmis à{' '}
-            <span className="font-medium text-[#0a0a0a]">{context?.organizationName}</span>
+            Votre avis a bien été transmis à{" "}
+            <span className="font-medium text-[#0a0a0a]">
+              {context?.organizationName}
+            </span>
             {context?.siteName ? (
               <>
-                {' '}
+                {" "}
                 — <span className="font-medium">{context.siteName}</span>
               </>
             ) : null}
             .
           </p>
-          <p className="mt-4 text-sm text-[#8a8a8a]">Vous pouvez fermer cette page.</p>
+          <p className="mt-4 text-sm text-[#8a8a8a]">
+            Vous pouvez fermer cette page.
+          </p>
         </div>
       </Shell>
     );
   }
 
   return (
-    <Shell accent={accent} orgName={context?.organizationName} logoUrl={context?.logoUrl}>
+    <Shell
+      accent={accent}
+      orgName={context?.organizationName}
+      logoUrl={context?.logoUrl}
+    >
       <div className="rounded-2xl border border-[#e8e3d9] bg-white p-5 sm:p-7 shadow-sm">
         <div className="mb-6">
           <p className="text-xs uppercase tracking-wide text-[#8a8a8a] mb-1">
@@ -177,7 +198,7 @@ function PublicFeedbackForm() {
                   <button
                     key={value}
                     type="button"
-                    aria-label={`${value} étoile${value > 1 ? 's' : ''}`}
+                    aria-label={`${value} étoile${value > 1 ? "s" : ""}`}
                     className="p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-transform active:scale-95"
                     onMouseEnter={() => setHovered(value)}
                     onMouseLeave={() => setHovered(0)}
@@ -185,7 +206,7 @@ function PublicFeedbackForm() {
                   >
                     <Star
                       className={`h-9 w-9 transition-colors ${
-                        active ? 'fill-current' : 'text-[#d6d0c4]'
+                        active ? "fill-current" : "text-[#d6d0c4]"
                       }`}
                       style={active ? { color: accent } : undefined}
                     />
@@ -193,13 +214,19 @@ function PublicFeedbackForm() {
                 );
               })}
             </div>
-            <p className="mt-2 text-center text-sm text-[#6a6a6a]">{ratingLabel}</p>
+            <p className="mt-2 text-center text-sm text-[#6a6a6a]">
+              {ratingLabel}
+            </p>
           </fieldset>
 
           {/* Comment */}
           <div>
-            <label htmlFor="comment" className="block text-sm font-semibold text-[#0a0a0a] mb-2">
-              Un commentaire ? <span className="font-normal text-[#8a8a8a]">(optionnel)</span>
+            <label
+              htmlFor="comment"
+              className="block text-sm font-semibold text-[#0a0a0a] mb-2"
+            >
+              Un commentaire ?{" "}
+              <span className="font-normal text-[#8a8a8a]">(optionnel)</span>
             </label>
             <textarea
               id="comment"
@@ -209,14 +236,15 @@ function PublicFeedbackForm() {
               maxLength={2000}
               placeholder="Ce qui s'est bien passé, ou ce qu'on peut améliorer…"
               className="w-full rounded-xl border border-[#e8e3d9] bg-[#fafaf8] px-4 py-3 text-sm text-[#0a0a0a] placeholder:text-[#a8a8a8] focus:outline-none focus:ring-2 focus:border-transparent resize-none"
-              style={{ ['--tw-ring-color' as string]: accent }}
+              style={{ ["--tw-ring-color" as string]: accent }}
             />
           </div>
 
           {/* Optional contact */}
           <div className="space-y-3 rounded-xl bg-[#f5f0e8] p-4">
             <p className="text-sm font-semibold text-[#0a0a0a]">
-              Vos coordonnées <span className="font-normal text-[#8a8a8a]">(optionnel)</span>
+              Vos coordonnées{" "}
+              <span className="font-normal text-[#8a8a8a]">(optionnel)</span>
             </p>
             <input
               type="text"
@@ -225,7 +253,7 @@ function PublicFeedbackForm() {
               placeholder="Votre nom"
               maxLength={100}
               className="w-full rounded-lg border border-[#e8e3d9] bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
-              style={{ ['--tw-ring-color' as string]: accent }}
+              style={{ ["--tw-ring-color" as string]: accent }}
             />
             <input
               type="email"
@@ -233,7 +261,7 @@ function PublicFeedbackForm() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Votre email"
               className="w-full rounded-lg border border-[#e8e3d9] bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
-              style={{ ['--tw-ring-color' as string]: accent }}
+              style={{ ["--tw-ring-color" as string]: accent }}
             />
             <label className="flex items-start gap-2 text-sm text-[#4a4a4a] cursor-pointer">
               <input
@@ -280,7 +308,7 @@ function PublicFeedbackForm() {
 
 function Shell({
   children,
-  accent = '#3a5a40',
+  accent = "#3a5a40",
   orgName,
   logoUrl,
 }: {
@@ -302,7 +330,7 @@ function Shell({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logoUrl}
-              alt={orgName || 'Logo'}
+              alt={orgName || "Logo"}
               className="h-10 w-10 rounded-lg object-cover border border-[#e8e3d9] bg-white"
             />
           ) : (
@@ -320,7 +348,8 @@ function Shell({
         </div>
         {children}
         <p className="mt-8 text-center text-[11px] text-[#a8a8a8]">
-          Propulsé par SatisClient — vos données sont traitées de façon confidentielle
+          Propulsé par SatisClient — vos données sont traitées de façon
+          confidentielle
         </p>
       </div>
     </div>

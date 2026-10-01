@@ -62,6 +62,10 @@ export interface PublicSurvey {
 }
 
 export const publicApi = {
+  registerQrScan: async (qr: string): Promise<void> => {
+    await publicClient.post("/public/scan", { qr });
+  },
+
   getFeedbackContext: async (
     site: string,
     qr?: string | null,

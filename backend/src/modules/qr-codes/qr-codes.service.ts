@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateQrCodeDto } from './dto/create-qr-code.dto';
@@ -24,17 +19,13 @@ export class QrCodesService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {
-    this.frontendUrl =
-      this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+    this.frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
   }
 
   /**
    * Créer un nouveau QR code
    */
-  async create(
-    createDto: CreateQrCodeDto,
-    userId?: string,
-  ): Promise<QrCodeResponseDto> {
+  async create(createDto: CreateQrCodeDto, userId?: string): Promise<QrCodeResponseDto> {
     const site = await this.prisma.site.findUnique({
       where: { id: createDto.siteId },
       include: { organization: true },
@@ -72,14 +63,13 @@ export class QrCodesService {
       surveyId = survey.id;
     }
 
-    const code = await this.generateUniqueCode(
-      createDto.organizationId,
-      createDto.siteId,
-    );
+    const code = await this.generateUniqueCode(createDto.organizationId, createDto.siteId);
 
-    const url = createDto.customUrl || (targetType === 'survey'
-      ? this.generateSurveyUrl(surveyId!, code)
-      : this.generateFeedbackUrl(site.code || site.id, code));
+    const url =
+      createDto.customUrl ||
+      (targetType === 'survey'
+        ? this.generateSurveyUrl(surveyId!, code)
+        : this.generateFeedbackUrl(site.code || site.id, code));
 
     const qrCodeImage = await this.generateQrCodeImage(url);
 
@@ -301,14 +291,12 @@ export class QrCodesService {
       throw new BadRequestException('Site invalide');
     }
 
-    const newCode = await this.generateUniqueCode(
-      qrCode.organization.id,
-      qrCode.site.id,
-    );
+    const newCode = await this.generateUniqueCode(qrCode.organization.id, qrCode.site.id);
 
-    const newUrl = qrCode.targetType === 'survey' && qrCode.targetId
-      ? this.generateSurveyUrl(qrCode.targetId, newCode)
-      : this.generateFeedbackUrl(qrCode.site.code, newCode);
+    const newUrl =
+      qrCode.targetType === 'survey' && qrCode.targetId
+        ? this.generateSurveyUrl(qrCode.targetId, newCode)
+        : this.generateFeedbackUrl(qrCode.site.code, newCode);
 
     const newQrCodeImage = await this.generateQrCodeImage(newUrl);
 
@@ -408,14 +396,12 @@ export class QrCodesService {
     }
 
     if (!site.isActive) {
-      throw new BadRequestException('Cet établissement n\'accepte plus de feedbacks');
+      throw new BadRequestException("Cet établissement n'accepte plus de feedbacks");
     }
 
     const orgStatus = site.organization.subscriptionStatus;
     if (orgStatus === 'suspended' || orgStatus === 'expired') {
-      throw new BadRequestException(
-        'Cet établissement n\'accepte plus de feedbacks pour le moment',
-      );
+      throw new BadRequestException("Cet établissement n'accepte plus de feedbacks pour le moment");
     }
 
     let resolvedQrCode: string | null = null;
@@ -444,14 +430,6 @@ export class QrCodesService {
       if (qr.expiresAt && qr.expiresAt < new Date()) {
         throw new BadRequestException('Ce QR code a expiré');
       }
-
-      await this.prisma.qrCode.update({
-        where: { id: qr.id },
-        data: {
-          scanCount: { increment: 1 },
-          lastScannedAt: new Date(),
-        },
-      });
 
       resolvedQrCode = qr.code;
     }
@@ -492,10 +470,7 @@ export class QrCodesService {
   /**
    * Statistiques
    */
-  async getStats(params: {
-    organizationId?: string;
-    siteId?: string;
-  }): Promise<{
+  async getStats(params: { organizationId?: string; siteId?: string }): Promise<{
     totalQrCodes: number;
     activeQrCodes: number;
     totalScans: number;
@@ -538,10 +513,7 @@ export class QrCodesService {
   /**
    * Générer code unique (format: QR-SITE-XXX)
    */
-  private async generateUniqueCode(
-    organizationId: string,
-    siteId: string,
-  ): Promise<string> {
+  private async generateUniqueCode(organizationId: string, siteId: string): Promise<string> {
     const site = await this.prisma.site.findUnique({
       where: { id: siteId },
       select: { code: true },

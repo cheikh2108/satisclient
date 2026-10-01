@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateSurveyDto } from './dto/create-survey.dto';
+import { CreateSurveyDto, SurveyType } from './dto/create-survey.dto';
 import { UpdateSurveyDto } from './dto/update-survey.dto';
 import { CreateSurveyResponseDto } from './dto/create-survey-response.dto';
 import { SurveyResponseDto, SurveyResponseItemDto } from './dto/survey-response.dto';
@@ -31,6 +31,18 @@ export class SurveysService {
   async create(createDto: CreateSurveyDto, userId?: string): Promise<SurveyResponseDto> {
     // Valider les questions
     this.validateQuestions(createDto.questions);
+
+    const surveyType = createDto.surveyType || SurveyType.ONE_TIME;
+    if (surveyType === SurveyType.CONTINUOUS && createDto.campaignPackId) {
+      throw new BadRequestException(
+        "Une enquête continue est couverte par l'abonnement et ne peut pas utiliser un pack campagne",
+      );
+    }
+    if (surveyType !== SurveyType.CONTINUOUS && !createDto.campaignPackId) {
+      throw new BadRequestException(
+        'Un crédit campagne est requis pour une enquête ponctuelle ou récurrente',
+      );
+    }
 
     // Vérifier que les sites existent
     if (createDto.targetSiteIds.length > 0) {
@@ -73,7 +85,7 @@ export class SurveysService {
           description: createDto.description,
           questions: createDto.questions as any,
           targetSiteIds: createDto.targetSiteIds,
-          surveyType: createDto.surveyType || 'one_time',
+          surveyType,
           startDate: createDto.startDate ? new Date(createDto.startDate) : null,
           endDate: createDto.endDate ? new Date(createDto.endDate) : null,
           settings: (createDto.settings || {}) as any,
@@ -190,10 +202,6 @@ export class SurveysService {
         throw new BadRequestException('QR code non valide pour cette organisation');
       }
       siteId = qr.siteId || siteId;
-      await this.prisma.qrCode.update({
-        where: { id: qr.id },
-        data: { scanCount: { increment: 1 }, lastScannedAt: now },
-      });
     }
 
     return {
