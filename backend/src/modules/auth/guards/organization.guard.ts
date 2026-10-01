@@ -98,10 +98,12 @@ export class OrganizationGuard implements CanActivate {
           if (campaignAccess) return true;
         }
         // Marquer automatiquement comme expiré
-        await this.prisma.organization.update({
-          where: { id: user.organizationId },
-          data: { subscriptionStatus: 'expired' },
-        }).catch(() => {});
+        await this.prisma.organization
+          .update({
+            where: { id: user.organizationId },
+            data: { subscriptionStatus: 'expired' },
+          })
+          .catch(() => {});
 
         throw new ForbiddenException(
           'Votre essai gratuit de 7 jours est terminé. Choisissez un plan sur satisclient.sn pour continuer.',
@@ -121,9 +123,7 @@ export class OrganizationGuard implements CanActivate {
       this.logger.warn(
         `Accès inter-organisation refusé: User ${user.id} (org: ${user.organizationId}) -> (org: ${resourceOrgId})`,
       );
-      throw new ForbiddenException(
-        'Accès refusé: ressource appartenant à une autre organisation.',
-      );
+      throw new ForbiddenException('Accès refusé: ressource appartenant à une autre organisation.');
     }
 
     return true;

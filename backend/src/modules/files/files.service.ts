@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import type { Multer } from 'multer';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class FilesService {
@@ -24,7 +25,10 @@ export class FilesService {
     'text/csv',
   ];
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
     this.uploadDir = path.join(process.cwd(), '../uploads');
     this.ensureUploadDir();
   }
@@ -38,6 +42,8 @@ export class FilesService {
   async uploadFile(
     file: Multer.File,
     userId: string,
+    organizationId: string,
+    metadata?: { name?: string; category?: string },
   ): Promise<any> {
     if (!file) {
       throw new BadRequestException('No file provided');
@@ -47,10 +53,25 @@ export class FilesService {
       throw new BadRequestException('File too large (max 10MB)');
     }
 
-    this.logger.log(`Upload reçu: mimetype=${file.mimetype}, size=${file.size}, name=${file.originalname}`);
+    this.logger.log(
+      `Upload reçu: mimetype=${file.mimetype}, size=${file.size}, name=${file.originalname}`,
+    );
     // Validation par extension (plus fiable que le mimetype sur tous les navigateurs)
     const ext = (file.originalname?.split('.').pop() || '').toLowerCase();
-    const allowedExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'txt', 'csv'];
+    const allowedExts = [
+      'pdf',
+      'doc',
+      'docx',
+      'xls',
+      'xlsx',
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'webp',
+      'txt',
+      'csv',
+    ];
     const mimeOk = this.allowedMimeTypes.includes(file.mimetype);
     const extOk = allowedExts.includes(ext);
     if (!mimeOk && !extOk) {
@@ -74,6 +95,27 @@ export class FilesService {
     const relativePath = `/${year}/${month}/${filename}`;
     const url = `${this.configService.get('BACKEND_URL') || 'http://localhost:3001'}/uploads${relativePath}`;
 
+    let storedFile;
+    try {
+      storedFile = await this.prisma.storedFile.create({
+        data: {
+          organizationId,
+          uploadedBy: userId,
+          filename,
+          originalName: file.originalname,
+          displayName: metadata?.name?.trim() || null,
+          category: metadata?.category || null,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: relativePath,
+          url,
+        },
+      });
+    } catch (error) {
+      if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+      throw error;
+    }
+
     this.logger.log({
       event: 'file.uploaded',
       filename,
@@ -83,7 +125,7 @@ export class FilesService {
     });
 
     return {
-      id: uuidv4(),
+      id: storedFile.id,
       filename,
       originalName: file.originalname,
       mimetype: file.mimetype,
@@ -91,18 +133,34 @@ export class FilesService {
       path: relativePath,
       url,
       uploadedBy: userId,
-      createdAt: new Date(),
+      createdAt: storedFile.createdAt,
+      category: storedFile.category,
+      displayName: storedFile.displayName,
     };
   }
 
-  async deleteFile(filepath: string): Promise<void> {
-    const fullPath = path.resolve(path.join(this.uploadDir, filepath));
-    if (!fullPath.startsWith(path.resolve(this.uploadDir))) {
+  async findAll(organizationId: string): Promise<any[]> {
+    return this.prisma.storedFile.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async deleteFile(id: string, organizationId: string): Promise<void> {
+    const storedFile = await this.prisma.storedFile.findFirst({
+      where: { id, organizationId },
+    });
+    if (!storedFile) return;
+
+    const fullPath = path.resolve(this.uploadDir, storedFile.path.replace(/^[/\\]+/, ''));
+    const relative = path.relative(path.resolve(this.uploadDir), fullPath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
       throw new Error('Chemin invalide');
     }
     if (fs.existsSync(fullPath)) {
       fs.unlinkSync(fullPath);
-      this.logger.log({ event: 'file.deleted', filepath });
     }
+    await this.prisma.storedFile.delete({ where: { id: storedFile.id } });
+    this.logger.log({ event: 'file.deleted', fileId: id });
   }
 }

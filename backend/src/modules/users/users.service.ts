@@ -1,9 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PasswordService } from '../../common/services/password.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private passwordService: PasswordService,
+  ) {}
 
   async findByEmail(email: string) {
     return this.prisma.user.findFirst({
@@ -20,6 +29,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         phone: true,
+        bio: true,
         role: true,
         status: true,
         organizationId: true,
@@ -98,7 +108,13 @@ export class UsersService {
 
   async updateProfile(
     userId: string,
-    data: { firstName?: string; lastName?: string; phone?: string; twoFactorEnabled?: boolean },
+    data: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      bio?: string;
+      twoFactorEnabled?: boolean;
+    },
   ) {
     return this.prisma.user.update({
       where: { id: userId },
@@ -109,11 +125,31 @@ export class UsersService {
         firstName: true,
         lastName: true,
         phone: true,
+        bio: true,
         role: true,
         status: true,
         updatedAt: true,
       },
     });
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const passwordValidation = this.passwordService.validateStrength(newPassword || '');
+    if (!passwordValidation.valid) {
+      throw new BadRequestException(passwordValidation.feedback.join(' '));
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { passwordHash: true },
+    });
+    if (!user || !(await this.passwordService.verify(currentPassword, user.passwordHash))) {
+      throw new UnauthorizedException('Mot de passe actuel incorrect');
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: await this.passwordService.hash(newPassword) },
+    });
+    return { message: 'Mot de passe modifié avec succès' };
   }
 
   async updatePreferences(userId: string, preferences: Record<string, unknown>) {

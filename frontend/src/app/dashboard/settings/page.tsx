@@ -30,6 +30,7 @@ import {
   useOrgUsage,
   useCreateBillingCheckout,
   useCreateCampaignCheckout,
+  useChangePassword,
 } from "@/hooks";
 
 // ── Labels ──────────────────────────────────────────────────────────────────
@@ -338,9 +339,20 @@ export default function SettingsPage() {
   const [selectedLang, setSelectedLang] = useState("fr");
   const [selectedTz, setSelectedTz] = useState("Europe/Paris");
   const [selectedDateFormat, setSelectedDateFormat] = useState("DD/MM/YYYY");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [organizationFields, setOrganizationFields] = useState({
+    website: "",
+    description: "",
+    industry: "",
+    country: "",
+    billingEmail: "",
+  });
 
   // Mutations API
   const updateProfile = useUpdateProfile();
+  const changePassword = useChangePassword();
   const updateOrg = useUpdateOrganization();
   const updatePrefs = useUpdatePreferences();
   const { data: notificationPreferences } = useNotificationPreferences();
@@ -353,6 +365,7 @@ export default function SettingsPage() {
       lastName: currentUser?.lastName ?? "",
       email: currentUser?.email ?? "",
       phone: (currentUser as any)?.phone ?? "",
+      bio: (currentUser as any)?.bio ?? "",
     },
   });
 
@@ -367,6 +380,7 @@ export default function SettingsPage() {
         lastName: currentUser.lastName ?? "",
         email: currentUser.email ?? "",
         phone: (currentUser as any)?.phone ?? "",
+        bio: (currentUser as any)?.bio ?? "",
       });
       // Charger les préférences sauvegardées
       const prefs = (currentUser as any)?.preferences as
@@ -404,6 +418,7 @@ export default function SettingsPage() {
       firstName: data.firstName,
       lastName: data.lastName,
       phone: (data as any).phone || undefined,
+      bio: (data as any).bio || undefined,
     });
   });
 
@@ -413,6 +428,13 @@ export default function SettingsPage() {
   useEffect(() => {
     if (currentOrg) {
       setOrgName(currentOrg.name ?? "");
+      setOrganizationFields({
+        website: currentOrg.website ?? "",
+        description: currentOrg.description ?? "",
+        industry: currentOrg.industry ?? "",
+        country: currentOrg.country ?? "",
+        billingEmail: currentOrg.billingEmail ?? currentOrg.email ?? "",
+      });
     }
   }, [currentOrg]);
 
@@ -420,8 +442,28 @@ export default function SettingsPage() {
     if (!currentUser?.organizationId) return;
     updateOrg.mutate({
       id: currentUser.organizationId,
-      data: { name: orgName },
+      data: { name: orgName, ...organizationFields },
     });
+  };
+
+  const handleChangePassword = () => {
+    if (newPassword !== confirmPassword) {
+      addToast({
+        type: "error",
+        title: "Les mots de passe ne correspondent pas",
+      });
+      return;
+    }
+    changePassword.mutate(
+      { currentPassword, newPassword },
+      {
+        onSuccess: () => {
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+        },
+      },
+    );
   };
 
   const handleSaveNotifications = () => {
@@ -431,6 +473,16 @@ export default function SettingsPage() {
       inAppEnabled: inAppNotifications,
       eventPreferences,
     });
+  };
+
+  const handleCancelNotifications = () => {
+    if (!notificationPreferences) return;
+    setEmailNotifications(notificationPreferences.emailEnabled);
+    setInAppNotifications(notificationPreferences.inAppEnabled);
+    setEventPreferences((current) => ({
+      ...current,
+      ...notificationPreferences.eventPreferences,
+    }));
   };
 
   const handleSaveSecurity = () => {
@@ -530,6 +582,7 @@ export default function SettingsPage() {
                   label="Bio"
                   rows={3}
                   placeholder="Parlez-nous de vous..."
+                  {...profileForm.register("bio")}
                 />
               </div>
             </div>
@@ -538,11 +591,40 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
                 Changer le mot de passe
               </h2>
-              <div className="rounded-lg border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/10 p-4">
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  La modification du mot de passe sera disponible dans une
-                  prochaine version.
-                </p>
+              <div className="space-y-3">
+                <Input
+                  label="Mot de passe actuel"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                />
+                <Input
+                  label="Nouveau mot de passe"
+                  type="password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  helperText="12 caractères minimum avec majuscule, chiffre et caractère spécial."
+                />
+                <Input
+                  label="Confirmer le nouveau mot de passe"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleChangePassword}
+                  disabled={
+                    changePassword.isPending ||
+                    !currentPassword ||
+                    !newPassword ||
+                    !confirmPassword
+                  }
+                >
+                  {changePassword.isPending
+                    ? "Modification..."
+                    : "Modifier le mot de passe"}
+                </Button>
               </div>
             </div>
 
@@ -586,12 +668,24 @@ export default function SettingsPage() {
                 />
                 <Input
                   label="Site web"
-                  defaultValue={(currentOrg as any)?.website || ""}
+                  value={organizationFields.website}
+                  onChange={(event) =>
+                    setOrganizationFields((current) => ({
+                      ...current,
+                      website: event.target.value,
+                    }))
+                  }
                 />
                 <Textarea
                   label="Description"
                   rows={3}
-                  defaultValue={(currentOrg as any)?.description || ""}
+                  value={organizationFields.description}
+                  onChange={(event) =>
+                    setOrganizationFields((current) => ({
+                      ...current,
+                      description: event.target.value,
+                    }))
+                  }
                 />
                 <Select
                   label="Secteur d'activité"
@@ -603,11 +697,23 @@ export default function SettingsPage() {
                     { value: "industrie", label: "Industrie" },
                     { value: "autre", label: "Autre" },
                   ]}
-                  defaultValue={(currentOrg as any)?.industry || ""}
+                  value={organizationFields.industry}
+                  onChange={(value) =>
+                    setOrganizationFields((current) => ({
+                      ...current,
+                      industry: value,
+                    }))
+                  }
                 />
                 <Input
                   label="Pays"
-                  defaultValue={(currentOrg as any)?.country || ""}
+                  value={organizationFields.country}
+                  onChange={(event) =>
+                    setOrganizationFields((current) => ({
+                      ...current,
+                      country: event.target.value,
+                    }))
+                  }
                 />
               </div>
             </div>
@@ -625,12 +731,19 @@ export default function SettingsPage() {
                     { value: "business", label: "Business" },
                     { value: "institution", label: "Institution" },
                   ]}
-                  defaultValue={currentOrg?.subscriptionPlan || ""}
+                  value={currentOrg?.subscriptionPlan || ""}
+                  disabled
                 />
                 <Input
                   label="Email de facturation"
                   type="email"
-                  defaultValue={currentOrg?.email || ""}
+                  value={organizationFields.billingEmail}
+                  onChange={(event) =>
+                    setOrganizationFields((current) => ({
+                      ...current,
+                      billingEmail: event.target.value,
+                    }))
+                  }
                 />
               </div>
             </div>
@@ -638,7 +751,10 @@ export default function SettingsPage() {
             <div className="flex items-center justify-end gap-3 pt-6">
               <Button
                 variant="outline"
-                onClick={() => setOrgName((currentOrg as any)?.name || "")}
+                onClick={() => {
+                  setOrgName(currentOrg?.name || "");
+                  setOrganizationFields({ website: currentOrg?.website || "", description: currentOrg?.description || "", industry: currentOrg?.industry || "", country: currentOrg?.country || "", billingEmail: currentOrg?.billingEmail || currentOrg?.email || "" });
+                }}
               >
                 Annuler
               </Button>
@@ -727,7 +843,9 @@ export default function SettingsPage() {
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-6">
-              <Button variant="outline">Annuler</Button>
+              <Button variant="outline" onClick={handleCancelNotifications}>
+                Annuler
+              </Button>
               <Button
                 variant="primary"
                 onClick={handleSaveNotifications}

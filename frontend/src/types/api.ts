@@ -6,7 +6,7 @@ export interface Feedback {
   overallRating: number;
   criteriaRatings?: Record<string, number>;
   comment?: string | null;
-  commentSentiment?: 'positive' | 'neutral' | 'negative' | null;
+  commentSentiment?: "positive" | "neutral" | "negative" | null;
   commentKeywords?: string[];
   userId?: string | null;
   isAnonymous: boolean;
@@ -54,8 +54,14 @@ export interface Complaint {
   description: string;
   category: string;
   subcategory?: string | null;
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  status: 'received' | 'qualified' | 'assigned' | 'in_progress' | 'resolved' | 'closed';
+  priority: "low" | "normal" | "high" | "urgent";
+  status:
+    | "received"
+    | "qualified"
+    | "assigned"
+    | "in_progress"
+    | "resolved"
+    | "closed";
   isAnonymous: boolean;
   complainantName?: string | null;
   complainantEmail?: string | null;
@@ -80,7 +86,7 @@ export interface CreateComplaintDto {
   title: string;
   description: string;
   category: string;
-  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  priority?: "low" | "normal" | "high" | "urgent";
   isAnonymous?: boolean;
   complainantName?: string;
   complainantEmail?: string;
@@ -92,8 +98,14 @@ export type CreateReclamationDto = CreateComplaintDto;
 export interface UpdateComplaintDto {
   title?: string;
   description?: string;
-  priority?: 'low' | 'normal' | 'high' | 'urgent';
-  status?: 'received' | 'qualified' | 'assigned' | 'in_progress' | 'resolved' | 'closed';
+  priority?: "low" | "normal" | "high" | "urgent";
+  status?:
+    | "received"
+    | "qualified"
+    | "assigned"
+    | "in_progress"
+    | "resolved"
+    | "closed";
 }
 
 export type UpdateReclamationDto = UpdateComplaintDto;
@@ -131,7 +143,7 @@ export interface Site {
   id: string;
   name: string;
   code: string;
-  type: 'organization' | 'region' | 'agency' | 'service' | 'point';
+  type: "organization" | "region" | "agency" | "service" | "point";
   organizationId: string;
   isActive: boolean;
   city?: string | null;
@@ -143,7 +155,7 @@ export interface Site {
 export interface CreateSiteDto {
   name: string;
   code?: string;
-  type: 'organization' | 'region' | 'agency' | 'service' | 'point';
+  type: "organization" | "region" | "agency" | "service" | "point";
   organizationId: string;
   isActive?: boolean;
   city?: string;
@@ -153,7 +165,7 @@ export interface CreateSiteDto {
 
 export interface UpdateSiteDto {
   name?: string;
-  type?: 'organization' | 'region' | 'agency' | 'service' | 'point';
+  type?: "organization" | "region" | "agency" | "service" | "point";
   isActive?: boolean;
   city?: string;
   region?: string;
@@ -166,8 +178,14 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'super_admin' | 'org_admin' | 'quality_manager' | 'service_manager' | 'agent' | 'client';
-  status: 'active' | 'inactive' | 'pending';
+  role:
+    | "super_admin"
+    | "org_admin"
+    | "quality_manager"
+    | "service_manager"
+    | "agent"
+    | "client";
+  status: "active" | "inactive" | "pending";
   organizationId?: string | null;
   lastLoginAt?: string | null;
   createdAt: string;
@@ -178,15 +196,27 @@ export interface CreateUserDto {
   lastName: string;
   email: string;
   password: string;
-  role: 'super_admin' | 'org_admin' | 'quality_manager' | 'service_manager' | 'agent' | 'client';
+  role:
+    | "super_admin"
+    | "org_admin"
+    | "quality_manager"
+    | "service_manager"
+    | "agent"
+    | "client";
   organizationId: string;
 }
 
 export interface UpdateUserDto {
   firstName?: string;
   lastName?: string;
-  role?: 'super_admin' | 'org_admin' | 'quality_manager' | 'service_manager' | 'agent' | 'client';
-  status?: 'active' | 'inactive' | 'pending' | 'suspended';
+  role?:
+    | "super_admin"
+    | "org_admin"
+    | "quality_manager"
+    | "service_manager"
+    | "agent"
+    | "client";
+  status?: "active" | "inactive" | "pending" | "suspended";
 }
 
 // ==================== ORGANIZATION ====================
@@ -195,6 +225,11 @@ export interface Organization {
   name: string;
   slug: string;
   email?: string | null;
+  website?: string | null;
+  description?: string | null;
+  industry?: string | null;
+  country?: string | null;
+  billingEmail?: string | null;
   phone?: string | null;
   subscriptionPlan: string;
   subscriptionStatus: string;
@@ -214,6 +249,11 @@ export interface CreateOrganizationDto {
 
 export interface UpdateOrganizationDto {
   name?: string;
+  website?: string;
+  description?: string;
+  industry?: string;
+  country?: string;
+  billingEmail?: string;
   subscriptionPlan?: string;
   subscriptionStatus?: string;
 }

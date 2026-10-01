@@ -130,6 +130,11 @@ model Organization {
   logoUrl        String?        @map("logo_url")
   primaryColor   String         @default("#3B82F6") @map("primary_color")
   welcomeMessage String?        @map("welcome_message")
+  website        String?
+  description    String?        @db.Text
+  industry       String?
+  country        String?        @default("SN")
+  billingEmail   String?        @map("billing_email")
 
   // Subscription
   subscriptionPlan      SubscriptionPlan      @default(essentialiel) @map("subscription_plan")
@@ -168,6 +173,8 @@ model Organization {
   auditLogs          AuditLog[]
   payments           Payment[]
   campaignPacks      CampaignPack[]
+  storedFiles        StoredFile[]
+  customRoles        CustomRole[]
 
   @@map("organizations")
 }
@@ -238,6 +245,7 @@ model User {
   // Identity
   email         String
   phone         String?
+  bio           String?   @db.Text
   passwordHash  String    @map("password_hash")
 
   // Profile
@@ -285,11 +293,49 @@ model User {
   refreshTokens       RefreshToken[]
   emailVerifications  EmailVerification[]
   passwordResets      PasswordReset[]
+  storedFiles         StoredFile[]
 
   @@unique([organizationId, email])
   @@index([organizationId, role])
   @@index([status])
   @@map("users")
+}
+
+model StoredFile {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  uploadedBy     String       @map("uploaded_by")
+  filename       String
+  originalName   String       @map("original_name")
+  displayName    String?      @map("display_name")
+  category       String?
+  mimetype       String
+  size           Int
+  path           String
+  url            String
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  uploader     User         @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+  @@map("stored_files")
+}
+
+model CustomRole {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  name           String
+  description    String
+  permissions    Json         @default("[]")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@map("custom_roles")
 }
 
 model Site {

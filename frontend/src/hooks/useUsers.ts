@@ -1,21 +1,17 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usersApi } from '@/lib/api';
-import type {
-  UserFilters,
-  CreateUserDto,
-  UpdateUserDto,
-} from '@/types/api';
-import { useToast } from '@/components/ui/toast';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { usersApi } from "@/lib/api";
+import type { UserFilters, CreateUserDto, UpdateUserDto } from "@/types/api";
+import { useToast } from "@/components/ui/toast";
 
 // Query keys
 export const userKeys = {
-  all: ['users'] as const,
-  lists: () => [...userKeys.all, 'list'] as const,
+  all: ["users"] as const,
+  lists: () => [...userKeys.all, "list"] as const,
   list: (filters?: UserFilters) => [...userKeys.lists(), filters] as const,
-  details: () => [...userKeys.all, 'detail'] as const,
+  details: () => [...userKeys.all, "detail"] as const,
   detail: (id: string) => [...userKeys.details(), id] as const,
-  me: () => [...userKeys.all, 'me'] as const,
-  stats: () => [...userKeys.all, 'stats'] as const,
+  me: () => [...userKeys.all, "me"] as const,
+  stats: () => [...userKeys.all, "stats"] as const,
 };
 
 // Hook pour récupérer tous les utilisateurs
@@ -57,7 +53,7 @@ export const useUserStats = () => {
 
 export const usePlatformStats = () =>
   useQuery({
-    queryKey: [...userKeys.all, 'platform-stats'],
+    queryKey: [...userKeys.all, "platform-stats"],
     queryFn: () => usersApi.getPlatformStats(),
     staleTime: 60 * 1000,
   });
@@ -73,17 +69,17 @@ export const useCreateUser = () => {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       queryClient.invalidateQueries({ queryKey: userKeys.stats() });
       addToast({
-        type: 'success',
-        title: 'Utilisateur créé',
+        type: "success",
+        title: "Utilisateur créé",
       });
     },
     onError: (error) => {
       addToast({
-        type: 'error',
-        title: 'Erreur',
-        description: 'Impossible de créer l\'utilisateur',
+        type: "error",
+        title: "Erreur",
+        description: "Impossible de créer l'utilisateur",
       });
-      console.error('Error creating user:', error);
+      console.error("Error creating user:", error);
     },
   });
 };
@@ -98,20 +94,22 @@ export const useUpdateUser = () => {
       usersApi.update(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: userKeys.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: userKeys.detail(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: userKeys.stats() });
       addToast({
-        type: 'success',
-        title: 'Utilisateur mis à jour',
+        type: "success",
+        title: "Utilisateur mis à jour",
       });
     },
     onError: (error) => {
       addToast({
-        type: 'error',
-        title: 'Erreur',
-        description: 'Impossible de mettre à jour l\'utilisateur',
+        type: "error",
+        title: "Erreur",
+        description: "Impossible de mettre à jour l'utilisateur",
       });
-      console.error('Error updating user:', error);
+      console.error("Error updating user:", error);
     },
   });
 };
@@ -121,15 +119,42 @@ export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   return useMutation({
-    mutationFn: (data: { firstName?: string; lastName?: string; phone?: string }) =>
-      usersApi.updateMe(data),
+    mutationFn: (data: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      bio?: string;
+    }) => usersApi.updateMe(data),
     onSuccess: () => {
       // Invalider les deux caches possibles pour l'utilisateur courant
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       queryClient.invalidateQueries({ queryKey: userKeys.me() });
-      addToast({ type: 'success', title: 'Profil mis à jour' });
+      addToast({ type: "success", title: "Profil mis à jour" });
     },
-    onError: () => addToast({ type: 'error', title: 'Erreur', description: 'Impossible de mettre à jour le profil' }),
+    onError: () =>
+      addToast({
+        type: "error",
+        title: "Erreur",
+        description: "Impossible de mettre à jour le profil",
+      }),
+  });
+};
+
+export const useChangePassword = () => {
+  const { addToast } = useToast();
+  return useMutation({
+    mutationFn: (data: { currentPassword: string; newPassword: string }) =>
+      usersApi.changePassword(data),
+    onSuccess: () =>
+      addToast({ type: "success", title: "Mot de passe modifié" }),
+    onError: (error: any) =>
+      addToast({
+        type: "error",
+        title: "Modification impossible",
+        description:
+          error?.response?.data?.message ||
+          "Vérifiez votre mot de passe actuel.",
+      }),
   });
 };
 
@@ -138,18 +163,28 @@ export const useUpdatePreferences = () => {
   const queryClient = useQueryClient();
   const { addToast } = useToast();
   return useMutation({
-    mutationFn: (prefs: Record<string, unknown>) => usersApi.updatePreferences(prefs),
+    mutationFn: (prefs: Record<string, unknown>) =>
+      usersApi.updatePreferences(prefs),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
-      addToast({ type: 'success', title: 'Préférences sauvegardées' });
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      addToast({ type: "success", title: "Préférences sauvegardées" });
     },
-    onError: () => addToast({ type: 'error', title: 'Erreur', description: 'Impossible de sauvegarder' }),
+    onError: () =>
+      addToast({
+        type: "error",
+        title: "Erreur",
+        description: "Impossible de sauvegarder",
+      }),
   });
 };
 
 // Hook pour récupérer les sessions actives
 export const useSessions = () =>
-  useQuery({ queryKey: ['users', 'me', 'sessions'], queryFn: () => usersApi.getSessions(), staleTime: 30 * 1000 });
+  useQuery({
+    queryKey: ["users", "me", "sessions"],
+    queryFn: () => usersApi.getSessions(),
+    staleTime: 30 * 1000,
+  });
 
 // Hook pour révoquer une session
 export const useRevokeSession = () => {
@@ -158,8 +193,8 @@ export const useRevokeSession = () => {
   return useMutation({
     mutationFn: (tokenId: string) => usersApi.revokeSession(tokenId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users', 'me', 'sessions'] });
-      addToast({ type: 'success', title: 'Session révoquée' });
+      queryClient.invalidateQueries({ queryKey: ["users", "me", "sessions"] });
+      addToast({ type: "success", title: "Session révoquée" });
     },
   });
 };
@@ -175,17 +210,17 @@ export const useDeleteUser = () => {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       queryClient.invalidateQueries({ queryKey: userKeys.stats() });
       addToast({
-        type: 'success',
-        title: 'Utilisateur supprimé',
+        type: "success",
+        title: "Utilisateur supprimé",
       });
     },
     onError: (error) => {
       addToast({
-        type: 'error',
-        title: 'Erreur',
-        description: 'Impossible de supprimer l\'utilisateur',
+        type: "error",
+        title: "Erreur",
+        description: "Impossible de supprimer l'utilisateur",
       });
-      console.error('Error deleting user:', error);
+      console.error("Error deleting user:", error);
     },
   });
 };

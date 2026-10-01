@@ -21,6 +21,8 @@ import { FilesModule } from './modules/files/files.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -71,6 +73,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
     ReportsModule,
     AuditModule,
     PaymentsModule,
+    RolesModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

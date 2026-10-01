@@ -3,6 +3,7 @@ import {
   Get,
   Patch,
   Delete,
+  Post,
   Body,
   UseGuards,
   Query,
@@ -33,9 +34,17 @@ export class UsersController {
   @ApiOperation({ summary: 'Mettre à jour le profil' })
   async updateProfile(
     @CurrentUser() user: JwtUser,
-    @Body() body: { firstName?: string; lastName?: string; phone?: string },
+    @Body() body: { firstName?: string; lastName?: string; phone?: string; bio?: string },
   ) {
     return this.usersService.updateProfile(user.id, body);
+  }
+
+  @Post('me/password')
+  async changePassword(
+    @CurrentUser() user: JwtUser,
+    @Body() body: { currentPassword: string; newPassword: string },
+  ) {
+    return this.usersService.changePassword(user.id, body.currentPassword, body.newPassword);
   }
 
   @Patch('me/preferences')

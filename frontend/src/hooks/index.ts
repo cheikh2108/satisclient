@@ -19,6 +19,7 @@ export {
   useUpdateUser,
   useDeleteUser,
   useUpdateProfile,
+  useChangePassword,
   useUpdatePreferences,
   useSessions,
   useRevokeSession,
@@ -30,3 +31,5 @@ export * from "./useAuditLogs";
 export * from "./useFiles";
 export * from "./useReports";
 export * from "./useBilling";
+export * from "./useSurveys";
+export * from "./useRoles";

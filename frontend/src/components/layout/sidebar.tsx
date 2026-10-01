@@ -19,6 +19,7 @@ import {
   X,
   BarChart3,
   FileCheck,
+  ClipboardList,
   Activity,
   LogOut,
 } from "lucide-react";
@@ -41,6 +42,7 @@ const clientMainMenu = [
   { name: "Feedbacks", href: "/dashboard/feedbacks", icon: MessageSquare },
   { name: "Réclamations", href: "/dashboard/reclamations", icon: AlertCircle },
   { name: "QR Codes", href: "/dashboard/qr-codes", icon: QrCode },
+  { name: "Enquêtes", href: "/dashboard/surveys", icon: ClipboardList },
   { name: "Rapports", href: "/dashboard/reports", icon: BarChart3 },
   { name: "Notifications", href: "/dashboard/notifications", icon: Bell },
 ];

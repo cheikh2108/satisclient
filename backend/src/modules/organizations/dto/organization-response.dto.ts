@@ -36,6 +36,26 @@ export class OrganizationResponseDto {
   @Expose()
   welcomeMessage?: string;
 
+  @ApiPropertyOptional()
+  @Expose()
+  website?: string;
+
+  @ApiPropertyOptional()
+  @Expose()
+  description?: string;
+
+  @ApiPropertyOptional()
+  @Expose()
+  industry?: string;
+
+  @ApiPropertyOptional()
+  @Expose()
+  country?: string;
+
+  @ApiPropertyOptional()
+  @Expose()
+  billingEmail?: string;
+
   @ApiProperty({ example: 'essentialiel', enum: SubscriptionPlan })
   @Expose()
   subscriptionPlan: SubscriptionPlan;
@@ -60,7 +80,7 @@ export class OrganizationResponseDto {
   @Expose()
   maxSites: number;
 
-  @ApiProperty({ example: 10, description: 'Nombre max d\'utilisateurs' })
+  @ApiProperty({ example: 10, description: "Nombre max d'utilisateurs" })
   @Expose()
   maxUsers: number;
 
@@ -85,7 +105,7 @@ export class OrganizationResponseDto {
   @Expose()
   currentSitesCount?: number;
 
-  @ApiPropertyOptional({ example: 7, description: 'Nombre d\'utilisateurs actuels' })
+  @ApiPropertyOptional({ example: 7, description: "Nombre d'utilisateurs actuels" })
   @Expose()
   currentUsersCount?: number;
 

@@ -1,11 +1,16 @@
 import {
   Controller,
+  Body,
   Post,
   UseInterceptors,
   UploadedFile,
   UseGuards,
   Request,
   BadRequestException,
+  Get,
+  Delete,
+  Param,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -54,11 +59,28 @@ export class FilesController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
     @UploadedFile() file: Multer.File,
+    @Body() body: { name?: string; category?: string },
     @Request() req,
   ): Promise<FileResponseDto> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
-    return this.filesService.uploadFile(file, req.user.id);
+    return this.filesService.uploadFile(file, req.user.id, req.user.organizationId, body);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Lister les fichiers de l’organisation' })
+  async listFiles(@Request() req): Promise<FileResponseDto[]> {
+    return this.filesService.findAll(req.user.organizationId);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Supprimer un fichier' })
+  async deleteFile(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req,
+  ): Promise<{ message: string }> {
+    await this.filesService.deleteFile(id, req.user.organizationId);
+    return { message: 'Fichier supprimé avec succès' };
   }
 }

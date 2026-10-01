@@ -14,7 +14,7 @@ import { SubscriptionPlan } from '@prisma/client';
 export class CreateOrganizationDto {
   @ApiProperty({
     example: 'Acme Corporation',
-    description: 'Nom de l\'organisation',
+    description: "Nom de l'organisation",
     minLength: 2,
     maxLength: 100,
   })
@@ -25,7 +25,7 @@ export class CreateOrganizationDto {
 
   @ApiProperty({
     example: 'contact@acme.com',
-    description: 'Email de contact de l\'organisation',
+    description: "Email de contact de l'organisation",
   })
   @IsEmail({}, { message: 'Email invalide' })
   email: string;
@@ -43,7 +43,7 @@ export class CreateOrganizationDto {
 
   @ApiProperty({
     example: 'https://example.com/logo.png',
-    description: 'URL du logo de l\'organisation',
+    description: "URL du logo de l'organisation",
     required: false,
   })
   @IsOptional()
@@ -72,7 +72,7 @@ export class CreateOrganizationDto {
 
   @ApiProperty({
     example: 'essentialiel',
-    description: 'Plan d\'abonnement',
+    description: "Plan d'abonnement",
     enum: SubscriptionPlan,
     default: 'essentialiel',
     required: false,
@@ -80,4 +80,25 @@ export class CreateOrganizationDto {
   @IsOptional()
   @IsEnum(SubscriptionPlan)
   subscriptionPlan?: SubscriptionPlan;
+
+  @IsOptional()
+  @IsString()
+  website?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  industry?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsEmail({}, { message: 'Email de facturation invalide' })
+  billingEmail?: string;
 }

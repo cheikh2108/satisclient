@@ -6,6 +6,8 @@ import { ConfigService } from '@nestjs/config';
 import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import * as fs from 'fs';
+import * as path from 'path';
 import { AppModule } from './app.module';
 import { SanitizePipe } from './common/pipes/sanitize.pipe';
 
@@ -19,6 +21,16 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const nodeEnv = configService.get('NODE_ENV') || 'development';
   const isDevelopment = nodeEnv === 'development';
+
+  const uploadRoot = path.resolve(process.cwd(), '../uploads');
+  app.use('/uploads', (req, res, next) => {
+    const requestedPath = decodeURIComponent(req.path).replace(/^[/\\]+/, '');
+    const filePath = path.resolve(uploadRoot, requestedPath);
+    const relativePath = path.relative(uploadRoot, filePath);
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) return next();
+    if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) return next();
+    return res.sendFile(filePath);
+  });
 
   // Global prefix
   app.setGlobalPrefix('api');

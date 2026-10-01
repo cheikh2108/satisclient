@@ -1,4 +1,13 @@
-import { Controller, Post, Body, UseGuards, Request, Res, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  Res,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -36,12 +45,20 @@ export class ReportsController {
   @ApiOperation({ summary: 'Générer rapport réclamations (PDF / Excel / CSV)' })
   async generateComplaintsReport(
     @Request() req,
-    @Body() body: { startDate?: string; endDate?: string; format?: string; organizationId?: string },
+    @Body()
+    body: {
+      startDate?: string;
+      endDate?: string;
+      format?: string;
+      organizationId?: string;
+      siteId?: string;
+    },
     @Res() res: Response,
   ) {
     const orgId = body.organizationId || req.user?.organizationId;
     const buffer = await this.reportsService.generateComplaintsReport({
       organizationId: orgId,
+      siteId: body.siteId,
       startDate: body.startDate ? new Date(body.startDate) : undefined,
       endDate: body.endDate ? new Date(body.endDate) : undefined,
       format: (body.format as 'pdf' | 'excel' | 'csv') || 'pdf',
@@ -55,12 +72,20 @@ export class ReportsController {
   @ApiOperation({ summary: 'Générer rapport analytics (PDF / Excel / CSV)' })
   async generateAnalyticsReport(
     @Request() req,
-    @Body() body: { startDate?: string; endDate?: string; format?: string; organizationId?: string },
+    @Body()
+    body: {
+      startDate?: string;
+      endDate?: string;
+      format?: string;
+      organizationId?: string;
+      siteId?: string;
+    },
     @Res() res: Response,
   ) {
     const orgId = body.organizationId || req.user?.organizationId;
     const buffer = await this.reportsService.generateAnalyticsReport({
       organizationId: orgId,
+      siteId: body.siteId,
       startDate: body.startDate ? new Date(body.startDate) : undefined,
       endDate: body.endDate ? new Date(body.endDate) : undefined,
       format: (body.format as 'pdf' | 'excel' | 'csv') || 'pdf',
@@ -92,12 +117,20 @@ export class ReportsController {
   @ApiOperation({ summary: 'Générer rapport feedbacks (PDF / Excel / CSV)' })
   async generateFeedbacksReport(
     @Request() req,
-    @Body() body: { startDate?: string; endDate?: string; format?: string; organizationId?: string },
+    @Body()
+    body: {
+      startDate?: string;
+      endDate?: string;
+      format?: string;
+      organizationId?: string;
+      siteId?: string;
+    },
     @Res() res: Response,
   ) {
     const orgId = body.organizationId || req.user?.organizationId;
     const buffer = await this.reportsService.generateFeedbacksReport({
       organizationId: orgId,
+      siteId: body.siteId,
       startDate: body.startDate ? new Date(body.startDate) : undefined,
       endDate: body.endDate ? new Date(body.endDate) : undefined,
       format: (body.format as 'pdf' | 'excel' | 'csv') || 'pdf',

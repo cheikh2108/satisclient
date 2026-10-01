@@ -1,19 +1,30 @@
-'use client';
+"use client";
 
-import { useRef, useState } from 'react';
-import { Table } from '@/components/ui/table';
-import { Modal, ModalFooter } from '@/components/ui/modal';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { useToast } from '@/components/ui/toast';
-import { useUploadFile } from '@/hooks';
-import { FileText, Plus, Eye, Download, Trash2, Upload, File, FileImage, FileSpreadsheet, Search } from 'lucide-react';
+import { useRef, useState } from "react";
+import { Table } from "@/components/ui/table";
+import { Modal, ModalFooter } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { useToast } from "@/components/ui/toast";
+import { useDeleteFile, useFiles, useUploadFile } from "@/hooks";
+import {
+  FileText,
+  Plus,
+  Eye,
+  Download,
+  Trash2,
+  Upload,
+  File,
+  FileImage,
+  FileSpreadsheet,
+  Search,
+} from "lucide-react";
 
 interface FileData {
   id: string;
   name: string;
-  type: 'PDF' | 'IMAGE' | 'EXCEL' | 'WORD' | 'OTHER';
+  type: "PDF" | "IMAGE" | "EXCEL" | "WORD" | "OTHER";
   size: string;
   uploadedBy: string;
   uploadedAt: string;
@@ -21,27 +32,36 @@ interface FileData {
   url: string;
 }
 
-const mockFiles: FileData[] = [];
-
 const parseFileSize = (size: string): number => {
   const match = size.match(/^([\d.]+)\s*(KB|MB|GB)$/i);
   if (!match) return 0;
   const num = parseFloat(match[1]);
   const unit = match[2].toUpperCase();
-  if (unit === 'KB') return num * 1024;
-  if (unit === 'MB') return num * 1024 * 1024;
-  if (unit === 'GB') return num * 1024 * 1024 * 1024;
+  if (unit === "KB") return num * 1024;
+  if (unit === "MB") return num * 1024 * 1024;
+  if (unit === "GB") return num * 1024 * 1024 * 1024;
   return num;
 };
 
 const formatSize = (bytes: number): string => {
-  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  if (bytes >= 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${bytes} B`;
 };
 
-const StatCard = ({ label, value, change, isPositive = true }: { label: string; value: string; change: string; isPositive?: boolean }) => (
+const StatCard = ({
+  label,
+  value,
+  change,
+  isPositive = true,
+}: {
+  label: string;
+  value: string;
+  change: string;
+  isPositive?: boolean;
+}) => (
   <div className="rounded-xl bg-slate-50/50 dark:bg-[#0a0a0a]/50 border border-slate-200/50 dark:border-slate-800/50 p-6">
     <div className="flex items-start justify-between">
       <div className="flex-1">
@@ -52,7 +72,9 @@ const StatCard = ({ label, value, change, isPositive = true }: { label: string; 
           {value}
         </p>
       </div>
-      <span className={`text-sm font-semibold ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+      <span
+        className={`text-sm font-semibold ${isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+      >
         {change}
       </span>
     </div>
@@ -60,73 +82,123 @@ const StatCard = ({ label, value, change, isPositive = true }: { label: string; 
 );
 
 export default function FilesPage() {
-  const [files, setFiles] = useState<FileData[]>(mockFiles);
   const [selectedFile, setSelectedFile] = useState<FileData | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadName, setUploadName] = useState("");
+  const [uploadCategory, setUploadCategory] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
+  const { data: storedFiles = [] } = useFiles();
   const uploadFile = useUploadFile();
+  const deleteFile = useDeleteFile();
 
-  const totalSizeBytes = files.reduce((sum, f) => sum + parseFileSize(f.size), 0);
+  const files: FileData[] = storedFiles.map((file) => ({
+    id: file.id,
+    name: file.displayName || file.originalName,
+    type: file.mimetype.includes("pdf")
+      ? "PDF"
+      : file.mimetype.includes("image")
+        ? "IMAGE"
+        : file.mimetype.includes("excel") ||
+            file.mimetype.includes("spreadsheet")
+          ? "EXCEL"
+          : file.mimetype.includes("word")
+            ? "WORD"
+            : "OTHER",
+    size: formatSize(file.size),
+    uploadedBy: file.uploadedBy,
+    uploadedAt: file.createdAt,
+    category: file.category || "Autre",
+    url: file.url,
+  }));
+
+  const totalSizeBytes = files.reduce(
+    (sum, f) => sum + parseFileSize(f.size),
+    0,
+  );
   const totalSizeFormatted = formatSize(totalSizeBytes);
 
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
-  const thisMonthCount = files.filter(f => {
+  const thisMonthCount = files.filter((f) => {
     const date = new Date(f.uploadedAt);
-    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    return (
+      date.getMonth() === currentMonth && date.getFullYear() === currentYear
+    );
   }).length;
 
   const getFileIcon = (type: string) => {
     switch (type) {
-      case 'PDF': return <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />;
-      case 'IMAGE': return <FileImage className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
-      case 'EXCEL': return <FileSpreadsheet className="h-5 w-5 text-green-600 dark:text-green-400" />;
-      case 'WORD': return <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
-      default: return <File className="h-5 w-5 text-slate-600 dark:text-slate-400" />;
+      case "PDF":
+        return <FileText className="h-5 w-5 text-red-600 dark:text-red-400" />;
+      case "IMAGE":
+        return (
+          <FileImage className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        );
+      case "EXCEL":
+        return (
+          <FileSpreadsheet className="h-5 w-5 text-green-600 dark:text-green-400" />
+        );
+      case "WORD":
+        return (
+          <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        );
+      default:
+        return <File className="h-5 w-5 text-slate-600 dark:text-slate-400" />;
     }
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce fichier ?')) {
-      setFiles(files.filter(f => f.id !== id));
-      addToast({ type: 'success', title: 'Fichier supprimé' });
+    if (confirm("Êtes-vous sûr de vouloir supprimer ce fichier ?")) {
+      deleteFile.mutate(id);
     }
   };
 
   const handleDownload = (file: FileData) => {
-    if (file.url && file.url !== '#') {
-      window.open(file.url, '_blank');
+    if (file.url && file.url !== "#") {
+      window.open(file.url, "_blank");
     } else {
-      addToast({ type: 'info', title: 'Fichier non disponible', description: 'L\'URL du fichier n\'est pas encore accessible.' });
+      addToast({
+        type: "info",
+        title: "Fichier non disponible",
+        description: "L'URL du fichier n'est pas encore accessible.",
+      });
     }
   };
 
   const handleUpload = () => {
     if (!uploadedFile) {
-      addToast({ type: 'error', title: 'Sélectionnez un fichier' });
+      addToast({ type: "error", title: "Sélectionnez un fichier" });
       return;
     }
-    uploadFile.mutate({ file: uploadedFile }, {
-      onSuccess: () => {
-        setShowUploadModal(false);
-        setUploadedFile(null);
+    uploadFile.mutate(
+      {
+        file: uploadedFile,
+        metadata: { name: uploadName, category: uploadCategory },
       },
-    });
+      {
+        onSuccess: () => {
+          setShowUploadModal(false);
+          setUploadedFile(null);
+          setUploadName("");
+          setUploadCategory("");
+        },
+      },
+    );
   };
 
-  const filteredFiles = files.filter(file =>
-    file.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredFiles = files.filter((file) =>
+    file.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const columns = [
     {
-      key: 'name',
-      label: 'NOM',
+      key: "name",
+      label: "NOM",
       sortable: true,
       render: (file: FileData) => (
         <div className="flex items-center gap-3">
@@ -134,15 +206,19 @@ export default function FilesPage() {
             {getFileIcon(file.type)}
           </div>
           <div>
-            <p className="font-medium text-slate-900 dark:text-white">{file.name}</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400">{file.category}</p>
+            <p className="font-medium text-slate-900 dark:text-white">
+              {file.name}
+            </p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              {file.category}
+            </p>
           </div>
         </div>
       ),
     },
     {
-      key: 'size',
-      label: 'TAILLE',
+      key: "size",
+      label: "TAILLE",
       sortable: true,
       render: (file: FileData) => (
         <span className="text-sm text-slate-600 dark:text-slate-400 tabular-nums">
@@ -151,22 +227,22 @@ export default function FilesPage() {
       ),
     },
     {
-      key: 'uploadedBy',
-      label: 'UPLOADÉ PAR',
+      key: "uploadedBy",
+      label: "UPLOADÉ PAR",
     },
     {
-      key: 'uploadedAt',
-      label: 'DATE',
+      key: "uploadedAt",
+      label: "DATE",
       sortable: true,
       render: (file: FileData) => (
         <span className="text-sm text-slate-600 dark:text-slate-400">
-          {new Date(file.uploadedAt).toLocaleDateString('fr-FR')}
+          {new Date(file.uploadedAt).toLocaleDateString("fr-FR")}
         </span>
       ),
     },
     {
-      key: 'actions',
-      label: '',
+      key: "actions",
+      label: "",
       render: (file: FileData) => (
         <div className="flex items-center gap-2">
           <button
@@ -218,10 +294,32 @@ export default function FilesPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Fichiers" value={files.length.toString()} change="—" isPositive />
-        <StatCard label="Taille totale" value={totalSizeFormatted} change="—" isPositive />
-        <StatCard label="Ce mois" value={thisMonthCount.toString()} change="—" isPositive />
-        <StatCard label="Documents" value={files.filter(f => f.type === 'PDF' || f.type === 'WORD').length.toString()} change="—" isPositive />
+        <StatCard
+          label="Total Fichiers"
+          value={files.length.toString()}
+          change="—"
+          isPositive
+        />
+        <StatCard
+          label="Taille totale"
+          value={totalSizeFormatted}
+          change="—"
+          isPositive
+        />
+        <StatCard
+          label="Ce mois"
+          value={thisMonthCount.toString()}
+          change="—"
+          isPositive
+        />
+        <StatCard
+          label="Documents"
+          value={files
+            .filter((f) => f.type === "PDF" || f.type === "WORD")
+            .length.toString()}
+          change="—"
+          isPositive
+        />
       </div>
 
       {/* Search */}
@@ -279,26 +377,34 @@ export default function FilesPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Taille
                 </label>
-                <p className="text-slate-900 dark:text-white">{selectedFile.size}</p>
+                <p className="text-slate-900 dark:text-white">
+                  {selectedFile.size}
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Catégorie
                 </label>
-                <p className="text-slate-900 dark:text-white">{selectedFile.category}</p>
+                <p className="text-slate-900 dark:text-white">
+                  {selectedFile.category}
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Uploadé par
                 </label>
-                <p className="text-slate-900 dark:text-white">{selectedFile.uploadedBy}</p>
+                <p className="text-slate-900 dark:text-white">
+                  {selectedFile.uploadedBy}
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Date d'upload
                 </label>
                 <p className="text-slate-900 dark:text-white">
-                  {new Date(selectedFile.uploadedAt).toLocaleDateString('fr-FR')}
+                  {new Date(selectedFile.uploadedAt).toLocaleDateString(
+                    "fr-FR",
+                  )}
                 </p>
               </div>
             </div>
@@ -308,7 +414,10 @@ export default function FilesPage() {
             <Button variant="outline" onClick={() => setShowDetailModal(false)}>
               Fermer
             </Button>
-            <Button variant="primary" onClick={() => handleDownload(selectedFile)}>
+            <Button
+              variant="primary"
+              onClick={() => handleDownload(selectedFile)}
+            >
               <Download className="h-4 w-4 mr-2" />
               Télécharger
             </Button>
@@ -322,6 +431,8 @@ export default function FilesPage() {
         onClose={() => {
           setShowUploadModal(false);
           setUploadedFile(null);
+          setUploadName("");
+          setUploadCategory("");
         }}
         title="Uploader un fichier"
         size="md"
@@ -339,39 +450,57 @@ export default function FilesPage() {
             />
             <Upload className="h-12 w-12 text-slate-400 mx-auto mb-4" />
             <p className="text-sm font-medium text-slate-900 dark:text-white mb-1">
-              {uploadedFile ? uploadedFile.name : 'Cliquez pour uploader ou glissez-déposez'}
+              {uploadedFile
+                ? uploadedFile.name
+                : "Cliquez pour uploader ou glissez-déposez"}
             </p>
             <p className="text-xs text-slate-600 dark:text-slate-400">
               PDF, Word, Excel, Images (max. 10MB)
             </p>
           </div>
 
-          <Input label="Nom du fichier" placeholder="Ex: Rapport mensuel" />
+          <Input
+            label="Nom du fichier"
+            placeholder="Ex: Rapport mensuel"
+            value={uploadName}
+            onChange={(event) => setUploadName(event.target.value)}
+          />
 
           <Select
             label="Catégorie"
             options={[
-              { value: 'Rapports', label: 'Rapports' },
-              { value: 'Images', label: 'Images' },
-              { value: 'Data', label: 'Data' },
-              { value: 'Documents', label: 'Documents' },
-              { value: 'Autre', label: 'Autre' },
+              { value: "Rapports", label: "Rapports" },
+              { value: "Images", label: "Images" },
+              { value: "Data", label: "Data" },
+              { value: "Documents", label: "Documents" },
+              { value: "Autre", label: "Autre" },
             ]}
             placeholder="Sélectionner une catégorie"
+            value={uploadCategory}
+            onChange={setUploadCategory}
             required
           />
         </div>
 
         <ModalFooter>
-          <Button variant="outline" onClick={() => {
-            setShowUploadModal(false);
-            setUploadedFile(null);
-          }}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowUploadModal(false);
+              setUploadedFile(null);
+              setUploadName("");
+              setUploadCategory("");
+            }}
+          >
             Annuler
           </Button>
-          <Button variant="primary" onClick={handleUpload} disabled={uploadFile.isPending}>
+          <Button
+            variant="primary"
+            onClick={handleUpload}
+            disabled={uploadFile.isPending}
+          >
             <Upload className="h-4 w-4 mr-2" />
-            {uploadFile.isPending ? 'Upload...' : 'Uploader'}
+            {uploadFile.isPending ? "Upload..." : "Uploader"}
           </Button>
         </ModalFooter>
       </Modal>
