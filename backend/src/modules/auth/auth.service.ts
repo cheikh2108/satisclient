@@ -6,6 +6,7 @@ import { PasswordService } from '../../common/services/password.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ResendEmailService } from '../../common/services/resend-email.service';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class AuthService {
     private passwordService: PasswordService,
     private prisma: PrismaService,
     private configService: ConfigService,
+    private resendEmailService: ResendEmailService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -77,7 +79,9 @@ export class AuthService {
   async refreshAccessToken(refreshToken: string) {
     const stored = await this.prisma.refreshToken.findUnique({
       where: { token: refreshToken },
-      include: { user: { select: { id: true, email: true, organizationId: true, role: true, status: true } } },
+      include: {
+        user: { select: { id: true, email: true, organizationId: true, role: true, status: true } },
+      },
     });
 
     if (!stored || stored.isRevoked || stored.expiresAt < new Date()) {
@@ -120,7 +124,9 @@ export class AuthService {
     );
     const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
 
-    await this.prisma.refreshToken.create({ data: { userId, token, expiresAt, ipAddress: '', userAgent: '' } });
+    await this.prisma.refreshToken.create({
+      data: { userId, token, expiresAt, ipAddress: '', userAgent: '' },
+    });
     return token;
   }
 
@@ -136,12 +142,23 @@ export class AuthService {
     if (existing) throw new BadRequestException('Un compte avec cet email existe déjà');
 
     const passwordValidation = this.passwordService.validateStrength(data.password);
-    if (!passwordValidation.valid) throw new BadRequestException({ message: 'Mot de passe trop faible', errors: passwordValidation.feedback });
+    if (!passwordValidation.valid)
+      throw new BadRequestException({
+        message: 'Mot de passe trop faible',
+        errors: passwordValidation.feedback,
+      });
 
     const passwordHash = await this.passwordService.hash(data.password);
 
     // Créer org + user atomiquement
-    const slug = data.orgName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 50) + '-' + Date.now().toString(36);
+    const slug =
+      data.orgName
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .slice(0, 50) +
+      '-' +
+      Date.now().toString(36);
 
     const [org] = await Promise.all([
       this.prisma.organization.create({
@@ -170,7 +187,14 @@ export class AuthService {
         status: 'active',
         emailVerifiedAt: new Date(),
       },
-      select: { id: true, email: true, firstName: true, lastName: true, role: true, organizationId: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        organizationId: true,
+      },
     });
 
     this.logger.log(`New account created: ${user.email} / org: ${org.name}`);
@@ -185,7 +209,9 @@ export class AuthService {
     }
 
     // Vérifier que l'organisation existe
-    const org = await this.prisma.organization.findUnique({ where: { id: registerDto.organizationId } });
+    const org = await this.prisma.organization.findUnique({
+      where: { id: registerDto.organizationId },
+    });
     if (!org) {
       throw new BadRequestException('Organisation non trouvée');
     }
@@ -194,9 +220,13 @@ export class AuthService {
     }
 
     // Vérifier le quota maxUsers
-    const currentUsers = await this.prisma.user.count({ where: { organizationId: registerDto.organizationId, deletedAt: null } });
+    const currentUsers = await this.prisma.user.count({
+      where: { organizationId: registerDto.organizationId, deletedAt: null },
+    });
     if (currentUsers >= org.maxUsers) {
-      throw new BadRequestException(`Quota atteint: ${currentUsers}/${org.maxUsers} utilisateurs. Passez à un plan supérieur pour en ajouter.`);
+      throw new BadRequestException(
+        `Quota atteint: ${currentUsers}/${org.maxUsers} utilisateurs. Passez à un plan supérieur pour en ajouter.`,
+      );
     }
 
     // Valider la force du mot de passe
@@ -262,9 +292,8 @@ export class AuthService {
       data: { userId: user.id, token, expiresAt },
     });
 
-    // TODO: envoyer l'email via mailService
-    // En prod: await this.mailService.sendPasswordResetEmail(user.email, user.firstName, token);
-    this.logger.log(`[RESET PASSWORD] Token pour ${user.email}: ${token}`);
+    await this.resendEmailService.sendPasswordResetEmail(user.email, user.firstName, token);
+    this.logger.log(`[RESET PASSWORD] Email de réinitialisation préparé pour ${user.email}`);
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {

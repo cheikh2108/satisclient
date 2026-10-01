@@ -11,6 +11,7 @@ import { PasswordService } from '../../common/services/password.service';
 import { RolesGuard } from './guards/roles.guard';
 import { OrganizationGuard } from './guards/organization.guard';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { ResendEmailService } from '../../common/services/resend-email.service';
 // PrismaModule est importé pour que PrismaService soit injectable dans OrganizationGuard
 
 @Module({
@@ -30,7 +31,15 @@ import { PrismaModule } from '../../prisma/prisma.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, PasswordService, RolesGuard, OrganizationGuard],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    PasswordService,
+    RolesGuard,
+    OrganizationGuard,
+    ResendEmailService,
+  ],
   exports: [AuthService, PasswordService, RolesGuard, OrganizationGuard],
 })
 export class AuthModule {}

@@ -198,6 +198,9 @@ SUPER_ADMIN_ORGANIZATION_NAME=SatisClient Platform
 DEXPAY_API_KEY=pk_test_...
 DEXPAY_API_SECRET=sk_test_...
 DEXPAY_SANDBOX=true
+# Resend (domaine d'expédition vérifié)
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=SatisClient <noreply@votre-domaine.tld>
 ```
 
 Au démarrage Docker, l'entrypoint exécute `prisma db push`, puis `bootstrap-super-admin.js`. Si le bootstrap échoue, le conteneur backend s'arrête afin que l'erreur apparaisse dans les logs Dokploy.

@@ -10,12 +10,19 @@ import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationResponseDto } from './dto/organization-response.dto';
 import { plainToInstance } from 'class-transformer';
+import { ResendEmailService } from '../../common/services/resend-email.service';
+import { PasswordService } from '../../common/services/password.service';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class OrganizationsService {
   private readonly logger = new Logger(OrganizationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly resendEmailService: ResendEmailService,
+    private readonly passwordService: PasswordService,
+  ) {}
 
   /**
    * Créer une nouvelle organisation
@@ -52,25 +59,63 @@ export class OrganizationsService {
     trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
     try {
-      const organization = await this.prisma.organization.create({
-        data: {
-          name: createDto.name,
-          slug,
-          email: createDto.email,
-          phone: createDto.phone,
-          logoUrl: createDto.logoUrl,
-          primaryColor: createDto.primaryColor || '#3B82F6',
-          welcomeMessage: createDto.welcomeMessage,
-          subscriptionPlan: createDto.subscriptionPlan || 'essentialiel',
-          subscriptionStatus: 'trial',
-          trialEndsAt,
-          maxSites: limits.maxSites,
-          maxUsers: limits.maxUsers,
-          maxMonthlyFeedbacks: limits.maxMonthlyFeedbacks,
-        },
+      const passwordSetupToken = randomBytes(32).toString('hex');
+      const temporaryPasswordHash = await this.passwordService.hash(
+        this.passwordService.generateSecure(),
+      );
+      const organization = await this.prisma.$transaction(async (tx) => {
+        const createdOrganization = await tx.organization.create({
+          data: {
+            name: createDto.name,
+            slug,
+            email: createDto.email,
+            phone: createDto.phone,
+            logoUrl: createDto.logoUrl,
+            primaryColor: createDto.primaryColor || '#3B82F6',
+            welcomeMessage: createDto.welcomeMessage,
+            subscriptionPlan: createDto.subscriptionPlan || 'essentialiel',
+            subscriptionStatus: 'trial',
+            trialEndsAt,
+            maxSites: limits.maxSites,
+            maxUsers: limits.maxUsers,
+            maxMonthlyFeedbacks: limits.maxMonthlyFeedbacks,
+          },
+        });
+
+        const admin = await tx.user.create({
+          data: {
+            organizationId: createdOrganization.id,
+            email: createDto.email,
+            firstName: 'Administrateur',
+            lastName: createDto.name,
+            passwordHash: temporaryPasswordHash,
+            role: 'org_admin',
+            status: 'active',
+          },
+        });
+
+        await tx.passwordReset.create({
+          data: {
+            userId: admin.id,
+            token: passwordSetupToken,
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+          },
+        });
+
+        return createdOrganization;
       });
 
       this.logger.log(`Organisation créée: ${organization.id} (${organization.name})`);
+
+      try {
+        await this.resendEmailService.sendOrganizationWelcomeEmail(
+          organization.email,
+          organization.name,
+          passwordSetupToken,
+        );
+      } catch (error) {
+        this.logger.warn(`Email de bienvenue non envoyé pour ${organization.id}: ${error.message}`);
+      }
 
       return plainToInstance(OrganizationResponseDto, organization);
     } catch (error) {

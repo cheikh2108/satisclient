@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { billingApi } from "@/lib/api/billing";
 import { useToast } from "@/components/ui/toast";
 
@@ -36,3 +36,10 @@ export const useCreateCampaignCheckout = () => {
       }),
   });
 };
+
+export const usePlatformCampaignStats = () =>
+  useQuery({
+    queryKey: ["billing", "platform-campaign-stats"],
+    queryFn: () => billingApi.getPlatformCampaignStats(),
+    staleTime: 60 * 1000,
+  });

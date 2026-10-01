@@ -3,6 +3,7 @@
 ## Vue d'ensemble
 
 Le projet SatisClient peut être déployé de plusieurs façons :
+
 1. **Dokploy** (VPS avec Docker) - **Recommandé** ✅
 2. Vercel (Frontend) + Railway (Backend)
 3. VPS classique (PM2)
@@ -13,6 +14,7 @@ Le projet SatisClient peut être déployé de plusieurs façons :
 ## 🎯 Déploiement avec Dokploy (Recommandé)
 
 ### Prérequis
+
 - ✅ VPS (Ubuntu 20.04+, Debian 11+, ou similaire)
 - ✅ Dokploy installé sur le VPS
 - ✅ Domaine configuré (ex: `satisclient.votredomaine.com`)
@@ -48,12 +50,14 @@ Le projet SatisClient peut être déployé de plusieurs façons :
 Ces fichiers seront créés dans la section suivante.
 
 ### Backend Dockerfile (`backend/Dockerfile`)
+
 - Multi-stage build (builder + production)
 - Prisma optimisé
 - Variables d'environnement sécurisées
 - Healthcheck
 
 ### Frontend Dockerfile (`frontend/Dockerfile`)
+
 - Next.js standalone build
 - Optimisations production
 - Variables d'environnement
@@ -80,11 +84,13 @@ Ces fichiers seront créés dans la section suivante.
 Dans Dokploy, ajouter ces variables :
 
 #### Variables communes
+
 ```env
 NODE_ENV=production
 ```
 
 #### Backend
+
 ```env
 # Database
 DATABASE_URL=postgresql://satisclient:VOTRE_PASSWORD@postgres:5432/satisclient_prod?schema=public
@@ -105,7 +111,10 @@ BACKEND_PORT=3001
 BACKEND_URL=https://api.satisclient.votredomaine.com
 CORS_ORIGIN=https://satisclient.votredomaine.com
 
-# Email (à configurer)
+# Email Resend (domaine d'expédition vérifié dans Resend)
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL="SatisClient <noreply@votre-domaine.tld>"
+# Anciennes variables SMTP conservées pour référence, non utilisées par le flux actuel
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=votre-email@gmail.com
@@ -119,6 +128,7 @@ TWILIO_PHONE_NUMBER=
 ```
 
 #### Frontend
+
 ```env
 NEXT_PUBLIC_API_URL=https://api.satisclient.votredomaine.com
 NEXT_PUBLIC_APP_URL=https://satisclient.votredomaine.com
@@ -138,6 +148,7 @@ Dokploy génère automatiquement les certificats SSL (Let's Encrypt) ✅
 ### Option A : PostgreSQL dans Dokploy (Recommandé)
 
 Dokploy propose PostgreSQL en un clic :
+
 1. Dans votre projet, ajouter **"New Database"**
 2. Type: **PostgreSQL**
 3. Version: **15**
@@ -212,6 +223,7 @@ Dokploy redéploie automatiquement à chaque push sur `main` ✅
 ### Déploiement manuel
 
 Dans l'interface Dokploy :
+
 1. Aller dans le projet
 2. Cliquer sur **"Rebuild & Deploy"**
 
@@ -222,6 +234,7 @@ Dans l'interface Dokploy :
 ### Logs
 
 Dans Dokploy :
+
 - **Backend logs:** Container `satisclient-backend`
 - **Frontend logs:** Container `satisclient-frontend`
 - **PostgreSQL logs:** Database service
@@ -229,6 +242,7 @@ Dans Dokploy :
 ### Métriques
 
 Dokploy affiche :
+
 - CPU usage
 - Memory usage
 - Requests/sec
@@ -288,6 +302,7 @@ npx prisma db push
 ### Horizontal Scaling
 
 Dokploy supporte le scaling :
+
 1. Augmenter le nombre de replicas backend
 2. Load balancer automatique
 3. Sessions partagées via Redis
@@ -295,6 +310,7 @@ Dokploy supporte le scaling :
 ### Vertical Scaling
 
 Augmenter les ressources du VPS :
+
 - CPU: 2+ cores
 - RAM: 4GB+ minimum
 - Disk: 50GB+ SSD
@@ -303,13 +319,13 @@ Augmenter les ressources du VPS :
 
 ## 💰 Coûts estimés
 
-| Service | Coût/mois |
-|---------|-----------|
-| VPS (4GB RAM, 2 CPU) | $10-20 |
-| Domaine | $10-15 |
-| Emails (SendGrid/Mailgun) | $0-10 |
-| SMS (Twilio) | Pay as you go |
-| **Total** | **$20-45/mois** |
+| Service                   | Coût/mois       |
+| ------------------------- | --------------- |
+| VPS (4GB RAM, 2 CPU)      | $10-20          |
+| Domaine                   | $10-15          |
+| Emails (SendGrid/Mailgun) | $0-10           |
+| SMS (Twilio)              | Pay as you go   |
+| **Total**                 | **$20-45/mois** |
 
 ---
 

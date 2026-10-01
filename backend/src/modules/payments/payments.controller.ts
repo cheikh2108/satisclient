@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { PaymentsService } from './payments.service';
@@ -30,6 +30,15 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Créer une session DexPay pour un pack campagne' })
   createCampaignCheckout(@CurrentUser() user: JwtUser, @Body() dto: CreateCampaignCheckoutDto) {
     return this.paymentsService.createCampaignCheckout(user.organizationId, dto);
+  }
+
+  @Get('platform-campaign-stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.super_admin)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Ventes et utilisation des packs campagne' })
+  getPlatformCampaignStats() {
+    return this.paymentsService.getPlatformCampaignStats();
   }
 
   @Post('dexpay/webhook')

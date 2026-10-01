@@ -165,6 +165,117 @@ export class PaymentsService {
     };
   }
 
+  async getPlatformCampaignStats() {
+    const [payments, packs] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: {
+          productType: 'campaign',
+          status: PaymentStatus.succeeded,
+          organization: { isPlatform: false },
+        },
+        select: {
+          amount: true,
+          campaignCount: true,
+          campaignPackage: true,
+        },
+      }),
+      this.prisma.campaignPack.findMany({
+        where: {
+          payment: {
+            status: PaymentStatus.succeeded,
+          },
+          organization: { isPlatform: false },
+        },
+        select: {
+          packageCode: true,
+          totalCampaigns: true,
+          remaining: true,
+          expiresAt: true,
+          organization: { select: { id: true, name: true } },
+          _count: { select: { surveys: true } },
+        },
+      }),
+    ]);
+
+    const packageStats = new Map<string, { revenue: number; packs: number; campaigns: number }>();
+    for (const payment of payments) {
+      const code = payment.campaignPackage || 'unknown';
+      const current = packageStats.get(code) || { revenue: 0, packs: 0, campaigns: 0 };
+      current.revenue += payment.amount;
+      current.packs += 1;
+      current.campaigns += payment.campaignCount || 0;
+      packageStats.set(code, current);
+    }
+
+    const organizationStats = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        packs: number;
+        purchased: number;
+        remaining: number;
+        consumed: number;
+        surveys: number;
+      }
+    >();
+    let remainingCredits = 0;
+    let purchasedCredits = 0;
+    let activePacks = 0;
+    let expiringPacks = 0;
+    const expirationThreshold = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    for (const pack of packs) {
+      const current = organizationStats.get(pack.organization.id) || {
+        id: pack.organization.id,
+        name: pack.organization.name,
+        packs: 0,
+        purchased: 0,
+        remaining: 0,
+        consumed: 0,
+        surveys: 0,
+      };
+      current.packs += 1;
+      current.purchased += pack.totalCampaigns;
+      current.remaining += pack.remaining;
+      current.consumed += pack.totalCampaigns - pack.remaining;
+      current.surveys += pack._count.surveys;
+      organizationStats.set(pack.organization.id, current);
+
+      purchasedCredits += pack.totalCampaigns;
+      remainingCredits += pack.remaining;
+      if (pack.remaining > 0 && pack.expiresAt > new Date()) activePacks += 1;
+      if (
+        pack.remaining > 0 &&
+        pack.expiresAt <= expirationThreshold &&
+        pack.expiresAt > new Date()
+      ) {
+        expiringPacks += 1;
+      }
+    }
+
+    return {
+      overview: {
+        revenue: payments.reduce((sum, payment) => sum + payment.amount, 0),
+        successfulPayments: payments.length,
+        packsSold: packs.length,
+        purchasedCredits,
+        remainingCredits,
+        consumedCredits: purchasedCredits - remainingCredits,
+        activePacks,
+        expiringPacks,
+      },
+      byPackage: Array.from(packageStats.entries()).map(([code, stats]) => ({
+        code,
+        label: CAMPAIGN_PACKAGES[code]?.label || code,
+        ...stats,
+      })),
+      byOrganization: Array.from(organizationStats.values()).sort(
+        (a, b) => b.purchased - a.purchased,
+      ),
+    };
+  }
+
   verifyWebhook(rawBody: string, signature: string | undefined): boolean {
     const secret = this.config.get<string>('DEXPAY_API_SECRET');
     if (!secret || !signature) return false;
