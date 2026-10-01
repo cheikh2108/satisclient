@@ -48,12 +48,38 @@ export class QrCodesService {
       throw new BadRequestException('organizationId ne correspond pas au site');
     }
 
+    const targetType = createDto.type || 'feedback';
+    if (!['feedback', 'survey'].includes(targetType)) {
+      throw new BadRequestException('Type de QR code invalide');
+    }
+
+    let surveyId: string | null = null;
+    if (targetType === 'survey') {
+      if (!createDto.surveyId) {
+        throw new BadRequestException('Une enquête est obligatoire pour ce QR code');
+      }
+
+      const survey = await this.prisma.survey.findFirst({
+        where: {
+          id: createDto.surveyId,
+          organizationId: createDto.organizationId,
+          targetSiteIds: { has: createDto.siteId },
+        },
+      });
+      if (!survey) {
+        throw new BadRequestException('Enquête invalide pour cet établissement');
+      }
+      surveyId = survey.id;
+    }
+
     const code = await this.generateUniqueCode(
       createDto.organizationId,
       createDto.siteId,
     );
 
-    const url = createDto.customUrl || this.generateFeedbackUrl(site.code || site.id, code);
+    const url = createDto.customUrl || (targetType === 'survey'
+      ? this.generateSurveyUrl(surveyId!, code)
+      : this.generateFeedbackUrl(site.code || site.id, code));
 
     const qrCodeImage = await this.generateQrCodeImage(url);
 
@@ -62,8 +88,8 @@ export class QrCodesService {
         organizationId: createDto.organizationId,
         siteId: createDto.siteId,
         code,
-        targetType: createDto.type || 'generic',
-        targetId: null,
+        targetType,
+        targetId: surveyId,
         destinationUrl: url,
         qrImageUrl: qrCodeImage,
       },
@@ -280,7 +306,9 @@ export class QrCodesService {
       qrCode.site.id,
     );
 
-    const newUrl = this.generateFeedbackUrl(qrCode.site.code, newCode);
+    const newUrl = qrCode.targetType === 'survey' && qrCode.targetId
+      ? this.generateSurveyUrl(qrCode.targetId, newCode)
+      : this.generateFeedbackUrl(qrCode.site.code, newCode);
 
     const newQrCodeImage = await this.generateQrCodeImage(newUrl);
 
@@ -556,6 +584,10 @@ export class QrCodesService {
    */
   private generateFeedbackUrl(siteCode: string, qrCode: string): string {
     return `${this.frontendUrl}/public/feedback?site=${siteCode}&qr=${qrCode}`;
+  }
+
+  private generateSurveyUrl(surveyId: string, qrCode: string): string {
+    return `${this.frontendUrl}/public/survey/${surveyId}?qr=${qrCode}`;
   }
 
   /**

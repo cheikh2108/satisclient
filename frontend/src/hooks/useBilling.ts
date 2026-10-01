@@ -19,3 +19,20 @@ export const useCreateBillingCheckout = () => {
     },
   });
 };
+
+export const useCreateCampaignCheckout = () => {
+  const { addToast } = useToast();
+
+  return useMutation({
+    mutationFn: (packageCode: string) =>
+      billingApi.createCampaignCheckout(packageCode),
+    onSuccess: ({ paymentUrl }) => window.location.assign(paymentUrl),
+    onError: () =>
+      addToast({
+        type: "error",
+        title: "Paiement indisponible",
+        description:
+          "Impossible de créer la session DexPay pour cette campagne.",
+      }),
+  });
+};

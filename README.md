@@ -102,6 +102,19 @@ satisclient/
 
 **Offre de lancement:** 7 jours d'essai gratuits
 
+### Campagnes ponctuelles
+
+Les organisations peuvent aussi acheter un pack de campagnes depuis **Paramètres > Abonnement** :
+
+| Pack           |         Prix | Validité |
+| -------------- | -----------: | -------- |
+| 1 campagne     |  75 000 FCFA | 30 jours |
+| 2 campagnes/an | 130 000 FCFA | 12 mois  |
+| 3 campagnes/an | 180 000 FCFA | 12 mois  |
+| 4 campagnes/an | 220 000 FCFA | 12 mois  |
+
+Un paiement confirmé par le webhook DexPay crée les crédits du pack. La création d'une enquête peut ensuite consommer un crédit disponible. Les QR codes **Feedback** servent à l'écoute continue ; les QR codes **Enquête** sont liés à un questionnaire précis.
+
 ## 🚀 Démarrage rapide
 
 ### Prérequis
@@ -193,9 +206,12 @@ Au démarrage Docker, l'entrypoint exécute `prisma db push`, puis `bootstrap-su
 
 Les organisations peuvent payer ou renouveler leur formule mensuelle depuis l'onglet **Abonnement**. Le backend crée une checkout session DexPay et redirige l'organisation vers la page de paiement hébergée.
 
+Les packs campagnes utilisent le même flux avec `POST /api/billing/campaign-checkout` et les codes `single`, `frequency2`, `frequency3` ou `frequency4`.
+
 - Les clés DexPay restent uniquement dans le service `backend`.
 - Le paiement est validé exclusivement par webhook signé HMAC-SHA256.
 - Un paiement confirmé active l'organisation pour 30 jours.
+- Un paiement campagne confirmé crée un pack de crédits avec une validité de 30 jours ou 12 mois selon le pack.
 - Une organisation expirée peut encore ouvrir le checkout pour renouveler son accès.
 - Utiliser les clés `pk_test_*` et `sk_test_*` en sandbox, puis les clés `pk_live_*` et `sk_live_*` en production.
 - Régler `DEXPAY_SANDBOX=true` avec les clés de test, puis `DEXPAY_SANDBOX=false` avec les clés de production.

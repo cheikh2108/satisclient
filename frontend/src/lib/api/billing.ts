@@ -8,9 +8,23 @@ export interface BillingCheckout {
   currency: string;
 }
 
+export interface CampaignCheckout extends BillingCheckout {
+  campaigns: number;
+}
+
 export const billingApi = {
   createCheckout: async (): Promise<BillingCheckout> => {
     const { data } = await apiClient.post<BillingCheckout>("/billing/checkout");
+    return data;
+  },
+
+  createCampaignCheckout: async (
+    packageCode: string,
+  ): Promise<CampaignCheckout> => {
+    const { data } = await apiClient.post<CampaignCheckout>(
+      "/billing/campaign-checkout",
+      { packageCode },
+    );
     return data;
   },
 };

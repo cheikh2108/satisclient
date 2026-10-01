@@ -1,4 +1,4 @@
-import { Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { PaymentsService } from './payments.service';
@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
+import { CreateCampaignCheckoutDto } from './dto/create-campaign-checkout.dto';
 
 @ApiTags('Billing')
 @Controller('billing')
@@ -20,6 +21,15 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Créer une session de paiement mensuel DexPay' })
   createCheckout(@CurrentUser() user: JwtUser) {
     return this.paymentsService.createCheckout(user.organizationId);
+  }
+
+  @Post('campaign-checkout')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.org_admin)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Créer une session DexPay pour un pack campagne' })
+  createCampaignCheckout(@CurrentUser() user: JwtUser, @Body() dto: CreateCampaignCheckoutDto) {
+    return this.paymentsService.createCampaignCheckout(user.organizationId, dto);
   }
 
   @Post('dexpay/webhook')

@@ -90,6 +90,14 @@ export class CreateSurveyDto {
   targetSiteIds: string[];
 
   @ApiPropertyOptional({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'Crédit de campagne utilisé pour ce questionnaire',
+  })
+  @IsOptional()
+  @IsUUID()
+  campaignPackId?: string;
+
+  @ApiPropertyOptional({
     enum: SurveyType,
     example: SurveyType.ONE_TIME,
     description: 'one_time, recurring, continuous',

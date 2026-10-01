@@ -29,6 +29,7 @@ import {
   useUpdateNotificationPreferences,
   useOrgUsage,
   useCreateBillingCheckout,
+  useCreateCampaignCheckout,
 } from "@/hooks";
 
 // ── Labels ──────────────────────────────────────────────────────────────────
@@ -107,6 +108,7 @@ function SubscriptionTab({
   isLoading: boolean;
 }) {
   const createCheckout = useCreateBillingCheckout();
+  const createCampaignCheckout = useCreateCampaignCheckout();
   if (isLoading) {
     return (
       <div className="max-w-2xl space-y-4 animate-pulse">
@@ -243,6 +245,69 @@ function SubscriptionTab({
           )}
         </div>
       )}
+
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800/60 p-5 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Acheter une campagne
+          </h2>
+          <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+            Utilisez un pack pour créer des enquêtes ponctuelles sans abonnement
+            supplémentaire.
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { code: "single", label: "1 campagne", price: "75 000 FCFA" },
+            {
+              code: "frequency2",
+              label: "2 campagnes/an",
+              price: "130 000 FCFA",
+            },
+            {
+              code: "frequency3",
+              label: "3 campagnes/an",
+              price: "180 000 FCFA",
+            },
+            {
+              code: "frequency4",
+              label: "4 campagnes/an",
+              price: "220 000 FCFA",
+            },
+          ].map((pack) => (
+            <button
+              key={pack.code}
+              type="button"
+              onClick={() => createCampaignCheckout.mutate(pack.code)}
+              disabled={createCampaignCheckout.isPending}
+              className="rounded-lg border border-slate-200 p-3 text-left transition-colors hover:border-[#3a5a40] hover:bg-[#3a5a40]/5 disabled:opacity-60 dark:border-slate-800"
+            >
+              <span className="block text-sm font-semibold text-slate-900 dark:text-white">
+                {pack.label}
+              </span>
+              <span className="mt-1 block text-xs text-slate-600 dark:text-slate-400">
+                {pack.price}
+              </span>
+            </button>
+          ))}
+        </div>
+        {usage.campaignPacks?.length > 0 && (
+          <div className="border-t border-slate-200 pt-3 text-sm dark:border-slate-800">
+            <p className="font-medium text-slate-900 dark:text-white">
+              Crédits disponibles
+            </p>
+            <div className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-400">
+              {usage.campaignPacks.map((pack: any) => (
+                <p key={pack.id}>
+                  {pack.remaining} campagne(s) restante(s), valables
+                  jusqu&apos;au{" "}
+                  {new Date(pack.expiresAt).toLocaleDateString("fr-FR")}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

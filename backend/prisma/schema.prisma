@@ -167,6 +167,7 @@ model Organization {
   qrCodes            QrCode[]
   auditLogs          AuditLog[]
   payments           Payment[]
+  campaignPacks      CampaignPack[]
 
   @@map("organizations")
 }
@@ -181,6 +182,9 @@ model Payment {
   amount              Int
   currency            String        @default("XOF")
   plan                SubscriptionPlan
+  productType         String        @default("subscription") @map("product_type")
+  campaignPackage     String?       @map("campaign_package")
+  campaignCount       Int?          @map("campaign_count")
   checkoutUrl         String?       @map("checkout_url")
   metadata            Json          @default("{}")
   paidAt              DateTime?     @map("paid_at")
@@ -188,10 +192,30 @@ model Payment {
   updatedAt           DateTime      @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaignPack CampaignPack?
 
   @@index([organizationId, status])
   @@index([providerTransactionId])
   @@map("payments")
+}
+
+model CampaignPack {
+  id              String   @id @default(uuid())
+  organizationId  String   @map("organization_id")
+  paymentId       String   @unique @map("payment_id")
+  packageCode     String   @map("package_code")
+  totalCampaigns  Int      @map("total_campaigns")
+  remaining      Int
+  expiresAt      DateTime  @map("expires_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payment      Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  surveys      Survey[]
+
+  @@index([organizationId, expiresAt])
+  @@map("campaign_packs")
 }
 
 model PaymentWebhookEvent {
@@ -381,6 +405,7 @@ model Feedback {
 model Survey {
   id             String   @id @default(uuid())
   organizationId String   @map("organization_id")
+  campaignPackId String?  @map("campaign_pack_id")
 
   // Content
   title       String
@@ -413,10 +438,12 @@ model Survey {
 
   // Relations
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaignPack CampaignPack?    @relation(fields: [campaignPackId], references: [id], onDelete: SetNull)
   creator      User?            @relation("SurveyCreator", fields: [createdBy], references: [id], onDelete: SetNull)
   responses    SurveyResponse[]
 
   @@index([organizationId])
+  @@index([campaignPackId])
   @@index([isActive])
   @@map("surveys")
 }

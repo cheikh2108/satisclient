@@ -315,7 +315,7 @@ export class OrganizationsService {
    * Retourner l'usage et les infos d'abonnement d'une organisation
    */
   async getUsage(organizationId: string) {
-    const [org, sitesCount, usersCount, feedbacksThisMonth] = await Promise.all([
+    const [org, sitesCount, usersCount, feedbacksThisMonth, campaignPacks] = await Promise.all([
       this.prisma.organization.findUnique({
         where: { id: organizationId },
         select: {
@@ -337,6 +337,21 @@ export class OrganizationsService {
           organizationId,
           createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) },
         },
+      }),
+      this.prisma.campaignPack.findMany({
+        where: {
+          organizationId,
+          remaining: { gt: 0 },
+          expiresAt: { gt: new Date() },
+        },
+        select: {
+          id: true,
+          packageCode: true,
+          remaining: true,
+          totalCampaigns: true,
+          expiresAt: true,
+        },
+        orderBy: { expiresAt: 'asc' },
       }),
     ]);
 
@@ -361,6 +376,7 @@ export class OrganizationsService {
       },
       subscriptionStartsAt: org.subscriptionStartsAt,
       subscriptionEndsAt: org.subscriptionEndsAt,
+      campaignPacks,
     };
   }
 

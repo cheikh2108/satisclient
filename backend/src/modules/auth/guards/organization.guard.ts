@@ -60,6 +60,21 @@ export class OrganizationGuard implements CanActivate {
       }
 
       if (org.subscriptionStatus === 'expired') {
+        const surveyId = request.params?.id;
+        const campaignPackId = request.body?.campaignPackId;
+        if (request.path.includes('/surveys') && (surveyId || campaignPackId)) {
+          const campaignAccess = await this.prisma.campaignPack.findFirst({
+            where: {
+              organizationId: user.organizationId,
+              remaining: { gt: 0 },
+              expiresAt: { gt: new Date() },
+              ...(campaignPackId
+                ? { id: campaignPackId }
+                : { surveys: { some: { id: surveyId } } }),
+            },
+          });
+          if (campaignAccess) return true;
+        }
         throw new ForbiddenException(
           'Votre abonnement a expiré. Renouvelez votre abonnement sur satisclient.sn.',
         );
@@ -70,6 +85,18 @@ export class OrganizationGuard implements CanActivate {
         org.trialEndsAt &&
         new Date(org.trialEndsAt) < new Date()
       ) {
+        const campaignPackId = request.body?.campaignPackId;
+        if (request.path.includes('/surveys') && campaignPackId) {
+          const campaignAccess = await this.prisma.campaignPack.findFirst({
+            where: {
+              id: campaignPackId,
+              organizationId: user.organizationId,
+              remaining: { gt: 0 },
+              expiresAt: { gt: new Date() },
+            },
+          });
+          if (campaignAccess) return true;
+        }
         // Marquer automatiquement comme expiré
         await this.prisma.organization.update({
           where: { id: user.organizationId },

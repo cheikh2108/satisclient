@@ -1,14 +1,24 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Table } from '@/components/ui/table';
-import { Modal, ModalFooter } from '@/components/ui/modal';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
-import { QrCode, Plus, Download, Eye, Copy, Check, Trash2, RefreshCw } from 'lucide-react';
-import { SkeletonTable } from '@/components/ui/skeleton';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Table } from "@/components/ui/table";
+import { Modal, ModalFooter } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
+import {
+  QrCode,
+  Plus,
+  Download,
+  Eye,
+  Copy,
+  Check,
+  Trash2,
+  RefreshCw,
+} from "lucide-react";
+import { SkeletonTable } from "@/components/ui/skeleton";
 import {
   useQRCodes,
   useQRCodeStats,
@@ -18,13 +28,14 @@ import {
   useDeleteQRCode,
   useRegenerateQRCode,
   useSites,
-} from '@/hooks';
+} from "@/hooks";
+import { apiClient } from "@/lib/api/client";
 
 // Extended interface covering both current type fields and actual backend response fields
 interface BackendQRCode {
   id: string;
   code: string;
-  targetType?: string;        // lowercase: 'feedback', 'survey', etc.
+  targetType?: string; // lowercase: 'feedback', 'survey', etc.
   destinationUrl?: string;
   qrImageUrl?: string | null;
   isActive: boolean;
@@ -40,7 +51,17 @@ interface BackendQRCode {
   type?: string;
 }
 
-const StatCard = ({ label, value, change, isPositive = true }: { label: string; value: string; change: string; isPositive?: boolean }) => (
+const StatCard = ({
+  label,
+  value,
+  change,
+  isPositive = true,
+}: {
+  label: string;
+  value: string;
+  change: string;
+  isPositive?: boolean;
+}) => (
   <div className="rounded-xl bg-slate-50/50 dark:bg-[#0a0a0a]/50 border border-slate-200/50 dark:border-slate-800/50 p-6">
     <div className="flex items-start justify-between">
       <div className="flex-1">
@@ -51,7 +72,9 @@ const StatCard = ({ label, value, change, isPositive = true }: { label: string; 
           {value}
         </p>
       </div>
-      <span className={`text-sm font-semibold ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+      <span
+        className={`text-sm font-semibold ${isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+      >
         {change}
       </span>
     </div>
@@ -64,14 +87,19 @@ export default function QRCodesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [formName, setFormName] = useState('');
-  const [formType, setFormType] = useState('');
-  const [formSiteId, setFormSiteId] = useState('');
-  const [formUrl, setFormUrl] = useState('');
+  const [formName, setFormName] = useState("");
+  const [formType, setFormType] = useState("");
+  const [formSurveyId, setFormSurveyId] = useState("");
+  const [formSiteId, setFormSiteId] = useState("");
+  const [formUrl, setFormUrl] = useState("");
   const { addToast } = useToast();
 
   const { data: currentUser } = useCurrentUser();
-  const { data: qrCodesData, isLoading, error } = useQRCodes({ includeRelations: true } as any);
+  const {
+    data: qrCodesData,
+    isLoading,
+    error,
+  } = useQRCodes({ includeRelations: true } as any);
   const { data: stats } = useQRCodeStats();
   const { data: sitesData } = useSites();
   const createQRCode = useCreateQRCode();
@@ -81,31 +109,54 @@ export default function QRCodesPage() {
 
   const qrCodes = (qrCodesData?.data || []) as BackendQRCode[];
   const sites = sitesData?.data || [];
+  const { data: surveys = [] } = useQuery({
+    queryKey: ["surveys", "qr-picker", (currentUser as any)?.organizationId],
+    queryFn: async () =>
+      (
+        await apiClient.get("/surveys", {
+          params: {
+            organizationId: (currentUser as any)?.organizationId,
+            isActive: true,
+          },
+        })
+      ).data,
+    enabled: !!(currentUser as any)?.organizationId,
+  });
 
-  const getDisplayName = (qr: BackendQRCode) => qr.name || qr.code || '-';
-  const getDisplayUrl = (qr: BackendQRCode) => qr.url || qr.destinationUrl || '-';
-  const getDisplaySite = (qr: BackendQRCode) => qr.site?.name || qr.siteName || '-';
+  const getDisplayName = (qr: BackendQRCode) => qr.name || qr.code || "-";
+  const getDisplayUrl = (qr: BackendQRCode) =>
+    qr.url || qr.destinationUrl || "-";
+  const getDisplaySite = (qr: BackendQRCode) =>
+    qr.site?.name || qr.siteName || "-";
   const getDisplayType = (qr: BackendQRCode) => {
-    const t = qr.targetType || qr.type || '';
-    const labels: Record<string, string> = { feedback: 'Feedback', survey: 'Enquête', generic: 'Général', redirect: 'Redirection', FEEDBACK: 'Feedback', SURVEY: 'Enquête', REDIRECT: 'Redirection' };
-    return labels[t] || t || '—';
+    const t = qr.targetType || qr.type || "";
+    const labels: Record<string, string> = {
+      feedback: "Feedback",
+      survey: "Enquête",
+      generic: "Feedback",
+      redirect: "Redirection",
+      FEEDBACK: "Feedback",
+      SURVEY: "Enquête",
+      REDIRECT: "Redirection",
+    };
+    return labels[t] || t || "—";
   };
 
   const handleCopyUrl = (url: string, id: string) => {
     navigator.clipboard.writeText(url);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
-    addToast({ type: 'success', title: 'URL copiée' });
+    addToast({ type: "success", title: "URL copiée" });
   };
 
   const handleDownloadQR = (qr: BackendQRCode) => {
     if (qr.qrImageUrl) {
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = qr.qrImageUrl;
       a.download = `${getDisplayName(qr)}.png`;
       a.click();
     }
-    addToast({ type: 'info', title: 'QR Code téléchargé' });
+    addToast({ type: "info", title: "QR Code téléchargé" });
   };
 
   const handleToggleActive = (qr: BackendQRCode) => {
@@ -113,7 +164,7 @@ export default function QRCodesPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce QR Code ?')) {
+    if (confirm("Êtes-vous sûr de vouloir supprimer ce QR Code ?")) {
       deleteQRCode.mutate(id);
       if (selectedQR?.id === id) setShowDetailModal(false);
     }
@@ -124,69 +175,81 @@ export default function QRCodesPage() {
   };
 
   const handleCreate = () => {
-    if (!formType || !formSiteId) {
-      addToast({ type: 'error', title: 'Type et établissement sont obligatoires' });
+    if (!formType || !formSiteId || (formType === "survey" && !formSurveyId)) {
+      addToast({
+        type: "error",
+        title: "Type et établissement sont obligatoires",
+      });
       return;
     }
     createQRCode.mutate(
       {
         siteId: formSiteId,
-        type: formType || 'feedback',
-        organizationId: (currentUser as any)?.organizationId || '',
+        type: formType || "feedback",
+        surveyId: formType === "survey" ? formSurveyId : undefined,
+        organizationId: (currentUser as any)?.organizationId || "",
         customUrl: formUrl || undefined,
       } as any,
       {
         onSuccess: () => {
           setShowCreateModal(false);
-          setFormName('');
-          setFormType('');
-          setFormSiteId('');
-          setFormUrl('');
+          setFormName("");
+          setFormType("");
+          setFormSurveyId("");
+          setFormSiteId("");
+          setFormUrl("");
         },
-      }
+      },
     );
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'FEEDBACK':
-      case 'Feedback': return 'text-primary-600 dark:text-primary-400';
-      case 'SURVEY':
-      case 'Enquête': return 'text-blue-600 dark:text-blue-400';
-      case 'REDIRECT':
-      case 'Redirection': return 'text-purple-600 dark:text-purple-400';
-      case 'Général': return 'text-slate-600 dark:text-slate-400';
-      default: return '';
+      case "FEEDBACK":
+      case "Feedback":
+        return "text-primary-600 dark:text-primary-400";
+      case "SURVEY":
+      case "Enquête":
+        return "text-blue-600 dark:text-blue-400";
+      case "REDIRECT":
+      case "Redirection":
+        return "text-purple-600 dark:text-purple-400";
+      case "Général":
+        return "text-slate-600 dark:text-slate-400";
+      default:
+        return "";
     }
   };
 
   const columns = [
     {
-      key: 'name',
-      label: 'NOM',
+      key: "name",
+      label: "NOM",
       sortable: true,
       render: (qr: BackendQRCode) => (
         <div>
-          <p className="font-medium text-slate-900 dark:text-white">{getDisplayName(qr)}</p>
-          <p className="text-xs text-slate-600 dark:text-slate-400">{getDisplaySite(qr)}</p>
+          <p className="font-medium text-slate-900 dark:text-white">
+            {getDisplayName(qr)}
+          </p>
+          <p className="text-xs text-slate-600 dark:text-slate-400">
+            {getDisplaySite(qr)}
+          </p>
         </div>
       ),
     },
     {
-      key: 'type',
-      label: 'TYPE',
+      key: "type",
+      label: "TYPE",
       render: (qr: BackendQRCode) => {
         const t = getDisplayType(qr);
         return (
-          <span className={`text-sm font-medium ${getTypeColor(t)}`}>
-            {t}
-          </span>
+          <span className={`text-sm font-medium ${getTypeColor(t)}`}>{t}</span>
         );
       },
     },
     {
-      key: 'url',
-      label: 'URL',
+      key: "url",
+      label: "URL",
       render: (qr: BackendQRCode) => {
         const url = getDisplayUrl(qr);
         return (
@@ -209,8 +272,8 @@ export default function QRCodesPage() {
       },
     },
     {
-      key: 'scanCount',
-      label: 'SCANS',
+      key: "scanCount",
+      label: "SCANS",
       sortable: true,
       render: (qr: BackendQRCode) => (
         <span className="font-semibold text-slate-900 dark:text-white tabular-nums">
@@ -219,26 +282,30 @@ export default function QRCodesPage() {
       ),
     },
     {
-      key: 'isActive',
-      label: 'STATUT',
+      key: "isActive",
+      label: "STATUT",
       render: (qr: BackendQRCode) => (
-        <span className={`text-sm font-medium ${qr.isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-500 dark:text-slate-500'}`}>
-          {qr.isActive ? 'Actif' : 'Inactif'}
+        <span
+          className={`text-sm font-medium ${qr.isActive ? "text-primary-600 dark:text-primary-400" : "text-slate-500 dark:text-slate-500"}`}
+        >
+          {qr.isActive ? "Actif" : "Inactif"}
         </span>
       ),
     },
     {
-      key: 'lastScannedAt',
-      label: 'DERNIER SCAN',
+      key: "lastScannedAt",
+      label: "DERNIER SCAN",
       render: (qr: BackendQRCode) => (
         <span className="text-sm text-slate-600 dark:text-slate-400">
-          {qr.lastScannedAt ? new Date(qr.lastScannedAt).toLocaleDateString('fr-FR') : 'Jamais'}
+          {qr.lastScannedAt
+            ? new Date(qr.lastScannedAt).toLocaleDateString("fr-FR")
+            : "Jamais"}
         </span>
       ),
     },
     {
-      key: 'actions',
-      label: '',
+      key: "actions",
+      label: "",
       render: (qr: BackendQRCode) => (
         <div className="flex items-center gap-2">
           <button
@@ -284,14 +351,34 @@ export default function QRCodesPage() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Total QR Codes" value={stats?.totalQrCodes?.toString() ?? '—'} change={(stats?.totalQrCodes??0)>0 ? `${Math.round(((stats?.activeQrCodes??0)/Math.max(stats?.totalQrCodes??1,1))*100)}%` : '—'} isPositive />
+        <StatCard
+          label="Total QR Codes"
+          value={stats?.totalQrCodes?.toString() ?? "—"}
+          change={
+            (stats?.totalQrCodes ?? 0) > 0
+              ? `${Math.round(((stats?.activeQrCodes ?? 0) / Math.max(stats?.totalQrCodes ?? 1, 1)) * 100)}%`
+              : "—"
+          }
+          isPositive
+        />
         <StatCard
           label="Total Scans"
-          value={stats?.totalScans ? stats.totalScans.toLocaleString('fr-FR') : '0'}
+          value={
+            stats?.totalScans ? stats.totalScans.toLocaleString("fr-FR") : "0"
+          }
           change="—"
           isPositive
         />
-        <StatCard label="Actifs" value={stats?.activeQrCodes?.toString() ?? '0'} change={(stats?.totalQrCodes ?? 0) > 0 ? `${Math.round(((stats?.activeQrCodes ?? 0) / stats!.totalQrCodes) * 100)}% du total` : '—'} isPositive />
+        <StatCard
+          label="Actifs"
+          value={stats?.activeQrCodes?.toString() ?? "0"}
+          change={
+            (stats?.totalQrCodes ?? 0) > 0
+              ? `${Math.round(((stats?.activeQrCodes ?? 0) / stats!.totalQrCodes) * 100)}% du total`
+              : "—"
+          }
+          isPositive
+        />
       </div>
 
       {/* Loading / Error / Table */}
@@ -346,19 +433,25 @@ export default function QRCodesPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Nom
                 </label>
-                <p className="text-slate-900 dark:text-white">{getDisplayName(selectedQR)}</p>
+                <p className="text-slate-900 dark:text-white">
+                  {getDisplayName(selectedQR)}
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Site
                 </label>
-                <p className="text-slate-900 dark:text-white">{getDisplaySite(selectedQR)}</p>
+                <p className="text-slate-900 dark:text-white">
+                  {getDisplaySite(selectedQR)}
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Type
                 </label>
-                <span className={`text-sm font-medium ${getTypeColor(getDisplayType(selectedQR))}`}>
+                <span
+                  className={`text-sm font-medium ${getTypeColor(getDisplayType(selectedQR))}`}
+                >
                   {getDisplayType(selectedQR)}
                 </span>
               </div>
@@ -366,7 +459,9 @@ export default function QRCodesPage() {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   Scans
                 </label>
-                <p className="text-slate-900 dark:text-white font-semibold">{selectedQR.scanCount}</p>
+                <p className="text-slate-900 dark:text-white font-semibold">
+                  {selectedQR.scanCount}
+                </p>
               </div>
             </div>
 
@@ -381,7 +476,9 @@ export default function QRCodesPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleCopyUrl(getDisplayUrl(selectedQR), selectedQR.id)}
+                  onClick={() =>
+                    handleCopyUrl(getDisplayUrl(selectedQR), selectedQR.id)
+                  }
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -390,11 +487,11 @@ export default function QRCodesPage() {
 
             <div className="flex gap-3">
               <Button
-                variant={selectedQR.isActive ? 'outline' : 'primary'}
+                variant={selectedQR.isActive ? "outline" : "primary"}
                 onClick={() => handleToggleActive(selectedQR)}
                 className="flex-1"
               >
-                {selectedQR.isActive ? 'Désactiver' : 'Activer'}
+                {selectedQR.isActive ? "Désactiver" : "Activer"}
               </Button>
               <Button
                 variant="primary"
@@ -446,24 +543,40 @@ export default function QRCodesPage() {
         <div className="space-y-4">
           <div className="rounded-lg bg-slate-50 dark:bg-[#1a1a1a] border border-slate-200 dark:border-slate-800/60 p-3">
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Le code QR sera généré automatiquement selon le site sélectionné (ex: <span className="font-mono font-medium">QR-DKR-PLT-001</span>)
+              Le code QR sera généré automatiquement selon le site sélectionné
+              (ex: <span className="font-mono font-medium">QR-DKR-PLT-001</span>
+              )
             </p>
           </div>
           <Select
             label="Type"
             options={[
-              { value: 'feedback', label: 'Feedback' },
-              { value: 'survey', label: 'Enquête' },
-              { value: 'generic', label: 'Générique' },
+              { value: "feedback", label: "Feedback" },
+              { value: "survey", label: "Enquête" },
             ]}
             placeholder="Sélectionner un type"
             required
             value={formType}
             onChange={(val) => setFormType(val)}
           />
+          {formType === "survey" && (
+            <Select
+              label="Enquête"
+              options={(Array.isArray(surveys) ? surveys : []).map(
+                (survey: any) => ({ value: survey.id, label: survey.title }),
+              )}
+              placeholder="Sélectionner une enquête"
+              required
+              value={formSurveyId}
+              onChange={(val) => setFormSurveyId(val)}
+            />
+          )}
           <Select
             label="Site"
-            options={sites.map((site) => ({ value: site.id, label: site.name }))}
+            options={sites.map((site) => ({
+              value: site.id,
+              label: site.name,
+            }))}
             placeholder="Sélectionner un site"
             required
             value={formSiteId}
@@ -486,7 +599,7 @@ export default function QRCodesPage() {
             onClick={handleCreate}
             disabled={createQRCode.isPending}
           >
-            {createQRCode.isPending ? 'Génération...' : 'Générer'}
+            {createQRCode.isPending ? "Génération..." : "Générer"}
           </Button>
         </ModalFooter>
       </Modal>
