@@ -1,4 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export enum QuestionType {
   SINGLE_CHOICE = 'single_choice',
@@ -39,21 +48,28 @@ export interface SkipLogic {
 
 export class Question {
   @ApiProperty({ example: 'q1' })
+  @IsString()
   id: string;
 
   @ApiProperty({ enum: QuestionType, example: QuestionType.RATING })
+  @IsEnum(QuestionType)
   type: QuestionType;
 
   @ApiProperty({ example: 'Comment évaluez-vous notre service ?' })
+  @IsString()
   title: string;
 
   @ApiPropertyOptional({ example: 'Donnez votre avis honnête' })
+  @IsOptional()
+  @IsString()
   description?: string;
 
   @ApiProperty({ example: true })
+  @IsBoolean()
   required: boolean;
 
   @ApiProperty({ example: 1, description: 'Ordre d\'affichage (1, 2, 3...)' })
+  @IsInt()
   order: number;
 
   @ApiPropertyOptional({
@@ -73,11 +89,15 @@ export class Question {
       { label: 'Très satisfait', value: '5' },
     ],
   })
+  @IsOptional()
+  @IsArray()
   options?: QuestionOption[];
 
   @ApiPropertyOptional({
     example: { min: 0, max: 10, minLabel: 'Pas du tout probable', maxLabel: 'Très probable' },
   })
+  @IsOptional()
+  @IsObject()
   config?: QuestionConfig;
 
   @ApiPropertyOptional({
@@ -91,5 +111,7 @@ export class Question {
       },
     },
   })
+  @IsOptional()
+  @IsArray()
   skipLogic?: SkipLogic[];
 }
