@@ -1,10 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   ClipboardList,
   ExternalLink,
+  MessageSquare,
   Pencil,
   Plus,
   Trash2,
@@ -26,7 +28,7 @@ import {
   useSurveys,
   useUpdateSurvey,
 } from "@/hooks";
-import type { Survey, SurveyQuestion } from "@/lib/api/surveys";
+import { surveysApi, type Survey, type SurveyQuestion } from "@/lib/api/surveys";
 
 type DraftQuestion = SurveyQuestion;
 
@@ -75,6 +77,12 @@ export default function SurveysPage() {
     createQuestion(1),
   ]);
   const submitLockRef = useRef(false);
+  const [responsesSurvey, setResponsesSurvey] = useState<Survey | null>(null);
+  const responsesQuery = useQuery({
+    queryKey: ["survey-responses", responsesSurvey?.id],
+    queryFn: () => surveysApi.getResponses(responsesSurvey!.id),
+    enabled: !!responsesSurvey,
+  });
 
   const sites = sitesData?.data || [];
   const packs = (usage?.campaignPacks || []).filter(
@@ -349,6 +357,12 @@ export default function SurveysPage() {
                   </Link>
                   <Button
                     variant="outline"
+                    onClick={() => setResponsesSurvey(survey)}
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" /> Réponses
+                  </Button>
+                  <Button
+                    variant="outline"
                     onClick={() => toggleActive(survey)}
                     disabled={updateSurvey.isPending}
                   >
@@ -565,6 +579,50 @@ export default function SurveysPage() {
                 : "Créer l’enquête"}
           </Button>
         </ModalFooter>
+      </Modal>
+
+      <Modal
+        open={!!responsesSurvey}
+        onClose={() => setResponsesSurvey(null)}
+        title={responsesSurvey ? `Réponses · ${responsesSurvey.title}` : "Réponses"}
+        size="xl"
+      >
+        {responsesQuery.isLoading ? (
+          <p className="py-8 text-center text-sm text-slate-500">Chargement des réponses...</p>
+        ) : responsesQuery.isError ? (
+          <p className="py-8 text-center text-sm text-red-600">Impossible de charger les réponses.</p>
+        ) : responsesQuery.data?.length ? (
+          <div className="space-y-4">
+            <p className="text-sm text-slate-500">
+              {responsesQuery.data.length} réponse(s) reçue(s)
+            </p>
+            {responsesQuery.data.map((response, index) => (
+              <div key={response.id} className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    Réponse {index + 1} · {response.isAnonymous ? "Anonyme" : response.respondentEmail || "Participant"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {new Date(response.submittedAt).toLocaleString("fr-FR")}
+                  </p>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {Object.entries(response.answers).map(([questionId, answer]) => {
+                    const question = responsesSurvey?.questions.find((item) => item.id === questionId);
+                    return (
+                      <div key={questionId} className="text-sm">
+                        <p className="font-medium text-slate-700 dark:text-slate-200">{question?.title || questionId}</p>
+                        <p className="text-slate-500 dark:text-slate-400">{Array.isArray(answer) ? answer.join(", ") : String(answer ?? "-")}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="py-8 text-center text-sm text-slate-500">Aucune réponse pour le moment.</p>
+        )}
       </Modal>
     </div>
   );

@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { AlertCircle, CheckCircle2, Loader2, Send } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Send, Star } from "lucide-react";
 import {
   publicApi,
   type PublicSurvey,
@@ -292,7 +292,33 @@ function QuestionField({
           className={inputClass}
         />
       )}
-      {type === "scale" || ["rating", "nps", "csat", "ces"].includes(type) ? (
+      {type === "rating" ? (
+        <div className="mt-3 flex flex-wrap items-center gap-1" role="radiogroup" aria-label="Choisissez une note sur 5">
+          {[1, 2, 3, 4, 5].map((score) => {
+            const selected = Number(value) >= score;
+            return (
+              <button
+                key={score}
+                type="button"
+                role="radio"
+                aria-label={`${score} sur 5`}
+                aria-checked={Number(value) === score}
+                onClick={() => onChange(score)}
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-lg transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                style={{ ["--tw-ring-color" as string]: accent }}
+              >
+                <Star
+                  className={`h-8 w-8 ${selected ? "fill-current" : "text-[#d6d0c4]"}`}
+                  style={selected ? { color: accent } : undefined}
+                />
+              </button>
+            );
+          })}
+          <span className="ml-2 text-sm text-[#6a6a6a]">
+            {value ? `${value}/5` : "Choisissez une note"}
+          </span>
+        </div>
+      ) : type === "scale" || ["nps", "csat", "ces"].includes(type) ? (
         <input
           type="number"
           min={question.config?.min ?? (type === "nps" ? 0 : 1)}

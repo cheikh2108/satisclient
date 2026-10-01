@@ -26,6 +26,20 @@ export type Survey = {
   campaignPackId?: string | null;
 };
 
+export type SurveyResponse = {
+  id: string;
+  surveyId: string;
+  organizationId: string;
+  siteId?: string;
+  isAnonymous: boolean;
+  respondentEmail?: string;
+  answers: Record<string, unknown>;
+  completionTimeSeconds?: number;
+  isCompleted: boolean;
+  submittedAt: string;
+  site?: { id: string; name: string };
+};
+
 export type CreateSurveyPayload = {
   organizationId: string;
   title: string;
@@ -54,6 +68,13 @@ export const surveysApi = {
 
   create: async (payload: CreateSurveyPayload): Promise<Survey> => {
     const { data } = await apiClient.post<Survey>("/surveys", payload);
+    return data;
+  },
+
+  getResponses: async (id: string): Promise<SurveyResponse[]> => {
+    const { data } = await apiClient.get<SurveyResponse[]>(
+      `/surveys/${id}/responses`,
+    );
     return data;
   },
 
