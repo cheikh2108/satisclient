@@ -24,8 +24,12 @@ function ResetForm() {
       setError('Les mots de passe ne correspondent pas');
       return;
     }
-    if (password.length < 8) {
-      setError('Minimum 8 caractères');
+    if (password.length < 12) {
+      setError('Le mot de passe doit contenir au moins 12 caractères');
+      return;
+    }
+    if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[@$!%*?&#^()_+\-={}\[\]|;:,.<>~]/.test(password)) {
+      setError('Utilisez au moins une minuscule, une majuscule, un chiffre et un caractère spécial');
       return;
     }
     setError('');
@@ -60,7 +64,8 @@ function ResetForm() {
       <Input
         label="Nouveau mot de passe"
         type="password"
-        placeholder="Minimum 8 caractères"
+        placeholder="Créer un mot de passe fort"
+        helperText="Au moins 12 caractères : une minuscule, une majuscule, un chiffre et un caractère spécial."
         value={password}
         onChange={e => setPassword(e.target.value)}
         required
