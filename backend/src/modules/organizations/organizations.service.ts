@@ -44,7 +44,10 @@ export class OrganizationsService {
 
     // Vérifier si l'email existe déjà
     const existingEmail = await this.prisma.organization.findFirst({
-      where: { email: createDto.email },
+      where: {
+        email: createDto.email,
+        deletedAt: null,
+      },
     });
 
     if (existingEmail) {
