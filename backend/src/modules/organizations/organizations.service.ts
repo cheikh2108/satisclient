@@ -287,24 +287,20 @@ export class OrganizationsService {
     // Vérifier que l'organisation existe
     await this.findOne(id);
 
-    // Vérifier qu'il n'y a pas de dépendances critiques
-    const hasUsers = await this.prisma.user.count({
-      where: { organizationId: id },
-    });
-
-    if (hasUsers > 0) {
-      throw new BadRequestException(
-        `Impossible de supprimer: ${hasUsers} utilisateur(s) associé(s)`,
-      );
-    }
-
     try {
-      await this.prisma.organization.update({
-        where: { id },
-        data: {
-          deletedAt: new Date(),
-          subscriptionStatus: 'suspended',
-        },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.organization.update({
+          where: { id },
+          data: {
+            deletedAt: new Date(),
+            subscriptionStatus: 'suspended',
+          },
+        });
+
+        await tx.user.updateMany({
+          where: { organizationId: id },
+          data: { status: 'inactive' },
+        });
       });
 
       this.logger.warn(`Organisation supprimée (soft): ${id}`);
