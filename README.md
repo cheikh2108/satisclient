@@ -240,14 +240,14 @@ Ne jamais placer `sk_test_*` ou `sk_live_*` dans le frontend, le dépôt Git ou 
 
 ## 📚 Documentation
 
-**👉 Toute la documentation est dans [docs/](docs/README.md)**
+**👉 Toute la documentation est dans le dossier [docs/](docs/)**
 
-- [Installation & Setup](docs/GETTING_STARTED.md)
+- [Manuel d'utilisation](docs/MANUEL_UTILISATION.md)
+- [Fiche technique](docs/FICHE_TECHNIQUE.md)
 - [Architecture technique](docs/ARCHITECTURE.md)
 - [Base de données](docs/DATABASE_SCHEMA.md)
 - [Sécurité](docs/SECURITY.md)
 - [Déploiement Dokploy](docs/DEPLOYMENT.md)
-- [État du projet](docs/STATUS.md)
 - [Cahier des charges](SatisClient_Cahier_des_charges_et_offre_commerciale.md)
 
 ## 🎯 Roadmap

@@ -28,7 +28,11 @@ import {
   useSurveys,
   useUpdateSurvey,
 } from "@/hooks";
-import { surveysApi, type Survey, type SurveyQuestion } from "@/lib/api/surveys";
+import {
+  surveysApi,
+  type Survey,
+  type SurveyQuestion,
+} from "@/lib/api/surveys";
 
 type DraftQuestion = SurveyQuestion;
 
@@ -584,44 +588,68 @@ export default function SurveysPage() {
       <Modal
         open={!!responsesSurvey}
         onClose={() => setResponsesSurvey(null)}
-        title={responsesSurvey ? `Réponses · ${responsesSurvey.title}` : "Réponses"}
+        title={
+          responsesSurvey ? `Réponses · ${responsesSurvey.title}` : "Réponses"
+        }
         size="xl"
       >
         {responsesQuery.isLoading ? (
-          <p className="py-8 text-center text-sm text-slate-500">Chargement des réponses...</p>
+          <p className="py-8 text-center text-sm text-slate-500">
+            Chargement des réponses...
+          </p>
         ) : responsesQuery.isError ? (
-          <p className="py-8 text-center text-sm text-red-600">Impossible de charger les réponses.</p>
+          <p className="py-8 text-center text-sm text-red-600">
+            Impossible de charger les réponses.
+          </p>
         ) : responsesQuery.data?.length ? (
           <div className="space-y-4">
             <p className="text-sm text-slate-500">
               {responsesQuery.data.length} réponse(s) reçue(s)
             </p>
             {responsesQuery.data.map((response, index) => (
-              <div key={response.id} className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+              <div
+                key={response.id}
+                className="rounded-xl border border-slate-200 p-4 dark:border-slate-800"
+              >
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Réponse {index + 1} · {response.isAnonymous ? "Anonyme" : response.respondentEmail || "Participant"}
+                    Réponse {index + 1} ·{" "}
+                    {response.isAnonymous
+                      ? "Anonyme"
+                      : response.respondentEmail || "Participant"}
                   </p>
                   <p className="text-xs text-slate-500">
                     {new Date(response.submittedAt).toLocaleString("fr-FR")}
                   </p>
                 </div>
                 <div className="mt-3 space-y-2">
-                  {Object.entries(response.answers).map(([questionId, answer]) => {
-                    const question = responsesSurvey?.questions.find((item) => item.id === questionId);
-                    return (
-                      <div key={questionId} className="text-sm">
-                        <p className="font-medium text-slate-700 dark:text-slate-200">{question?.title || questionId}</p>
-                        <p className="text-slate-500 dark:text-slate-400">{Array.isArray(answer) ? answer.join(", ") : String(answer ?? "-")}</p>
-                      </div>
-                    );
-                  })}
+                  {Object.entries(response.answers).map(
+                    ([questionId, answer]) => {
+                      const question = responsesSurvey?.questions.find(
+                        (item) => item.id === questionId,
+                      );
+                      return (
+                        <div key={questionId} className="text-sm">
+                          <p className="font-medium text-slate-700 dark:text-slate-200">
+                            {question?.title || questionId}
+                          </p>
+                          <p className="text-slate-500 dark:text-slate-400">
+                            {Array.isArray(answer)
+                              ? answer.join(", ")
+                              : String(answer ?? "-")}
+                          </p>
+                        </div>
+                      );
+                    },
+                  )}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="py-8 text-center text-sm text-slate-500">Aucune réponse pour le moment.</p>
+          <p className="py-8 text-center text-sm text-slate-500">
+            Aucune réponse pour le moment.
+          </p>
         )}
       </Modal>
     </div>

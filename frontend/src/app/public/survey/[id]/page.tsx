@@ -293,7 +293,11 @@ function QuestionField({
         />
       )}
       {type === "rating" ? (
-        <div className="mt-3 flex flex-wrap items-center gap-1" role="radiogroup" aria-label="Choisissez une note sur 5">
+        <div
+          className="mt-3 flex flex-wrap items-center gap-1"
+          role="radiogroup"
+          aria-label="Choisissez une note sur 5"
+        >
           {[1, 2, 3, 4, 5].map((score) => {
             const selected = Number(value) >= score;
             return (

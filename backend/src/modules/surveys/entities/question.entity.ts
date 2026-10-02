@@ -1,13 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsArray,
-  IsBoolean,
-  IsEnum,
-  IsInt,
-  IsObject,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsInt, IsObject, IsOptional, IsString } from 'class-validator';
 
 export enum QuestionType {
   SINGLE_CHOICE = 'single_choice',
@@ -68,7 +60,7 @@ export class Question {
   @IsBoolean()
   required: boolean;
 
-  @ApiProperty({ example: 1, description: 'Ordre d\'affichage (1, 2, 3...)' })
+  @ApiProperty({ example: 1, description: "Ordre d'affichage (1, 2, 3...)" })
   @IsInt()
   order: number;
 

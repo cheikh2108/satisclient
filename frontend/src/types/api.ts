@@ -242,8 +242,7 @@ export interface Organization {
 
 export interface CreateOrganizationDto {
   name: string;
-  slug: string;
-  email?: string;
+  email: string;
   subscriptionPlan?: string;
 }
 
