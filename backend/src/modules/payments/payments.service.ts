@@ -171,7 +171,7 @@ export class PaymentsService {
         where: {
           productType: 'campaign',
           status: PaymentStatus.succeeded,
-          organization: { isPlatform: false },
+          organization: { isPlatform: false, deletedAt: null },
         },
         select: {
           amount: true,
@@ -184,7 +184,7 @@ export class PaymentsService {
           payment: {
             status: PaymentStatus.succeeded,
           },
-          organization: { isPlatform: false },
+          organization: { isPlatform: false, deletedAt: null },
         },
         select: {
           packageCode: true,

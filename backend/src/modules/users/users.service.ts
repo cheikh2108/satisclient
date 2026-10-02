@@ -16,7 +16,11 @@ export class UsersService {
 
   async findByEmail(email: string) {
     return this.prisma.user.findFirst({
-      where: { email, deletedAt: null },
+      where: {
+        email,
+        deletedAt: null,
+        organization: { deletedAt: null },
+      },
     });
   }
 
@@ -195,25 +199,45 @@ export class UsersService {
       totalFeedbacks,
       totalComplaints,
     ] = await Promise.all([
-      this.prisma.organization.count({ where: { isPlatform: false } }),
+      this.prisma.organization.count({ where: { isPlatform: false, deletedAt: null } }),
       this.prisma.organization.count({
-        where: { isPlatform: false, subscriptionStatus: 'active' },
+        where: { isPlatform: false, deletedAt: null, subscriptionStatus: 'active' },
       }),
-      this.prisma.organization.count({ where: { isPlatform: false, subscriptionStatus: 'trial' } }),
       this.prisma.organization.count({
-        where: { isPlatform: false, subscriptionStatus: 'suspended' },
+        where: { isPlatform: false, deletedAt: null, subscriptionStatus: 'trial' },
       }),
-      this.prisma.user.count({ where: { deletedAt: null, organization: { isPlatform: false } } }),
-      this.prisma.user.count({
-        where: { status: 'active', deletedAt: null, organization: { isPlatform: false } },
+      this.prisma.organization.count({
+        where: { isPlatform: false, deletedAt: null, subscriptionStatus: 'suspended' },
       }),
       this.prisma.user.count({
-        where: { status: 'pending', deletedAt: null, organization: { isPlatform: false } },
+        where: { deletedAt: null, organization: { isPlatform: false, deletedAt: null } },
       }),
-      this.prisma.site.count({ where: { organization: { isPlatform: false } } }),
-      this.prisma.site.count({ where: { isActive: true, organization: { isPlatform: false } } }),
-      this.prisma.feedback.count({ where: { organization: { isPlatform: false } } }),
-      this.prisma.complaint.count({ where: { organization: { isPlatform: false } } }),
+      this.prisma.user.count({
+        where: {
+          status: 'active',
+          deletedAt: null,
+          organization: { isPlatform: false, deletedAt: null },
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          status: 'pending',
+          deletedAt: null,
+          organization: { isPlatform: false, deletedAt: null },
+        },
+      }),
+      this.prisma.site.count({
+        where: { organization: { isPlatform: false, deletedAt: null } },
+      }),
+      this.prisma.site.count({
+        where: { isActive: true, organization: { isPlatform: false, deletedAt: null } },
+      }),
+      this.prisma.feedback.count({
+        where: { organization: { isPlatform: false, deletedAt: null } },
+      }),
+      this.prisma.complaint.count({
+        where: { organization: { isPlatform: false, deletedAt: null } },
+      }),
     ]);
 
     return {

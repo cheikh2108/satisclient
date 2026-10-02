@@ -210,7 +210,7 @@ export class AuthService {
 
     // Vérifier que l'organisation existe
     const org = await this.prisma.organization.findUnique({
-      where: { id: registerDto.organizationId },
+      where: { id: registerDto.organizationId, deletedAt: null },
     });
     if (!org) {
       throw new BadRequestException('Organisation non trouvée');
