@@ -1,57 +1,69 @@
-'use client';
+"use client";
 
-import { useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { apiClient } from '@/lib/api/client';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { apiClient } from "@/lib/api/client";
+import { CheckCircle, AlertCircle } from "lucide-react";
 
 function ResetForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const token = searchParams.get('token') || '';
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [error, setError] = useState('');
+  const token = searchParams.get("token") || "";
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirm) {
-      setError('Les mots de passe ne correspondent pas');
+      setError("Les mots de passe ne correspondent pas");
       return;
     }
     if (password.length < 12) {
-      setError('Le mot de passe doit contenir au moins 12 caractères');
+      setError("Le mot de passe doit contenir au moins 12 caractères");
       return;
     }
-    if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[@$!%*?&#^()_+\-={}\[\]|;:,.<>~]/.test(password)) {
-      setError('Utilisez au moins une minuscule, une majuscule, un chiffre et un caractère spécial');
+    if (
+      !/[a-z]/.test(password) ||
+      !/[A-Z]/.test(password) ||
+      !/\d/.test(password) ||
+      !/[@$!%*?&#^()_+\-={}\[\]|;:,.<>~]/.test(password)
+    ) {
+      setError(
+        "Utilisez au moins une minuscule, une majuscule, un chiffre et un caractère spécial",
+      );
       return;
     }
-    setError('');
+    setError("");
     setLoading(true);
     try {
-      await apiClient.post('/auth/reset-password', { token, password });
+      await apiClient.post("/auth/reset-password", { token, password });
       setSuccess(true);
-      setTimeout(() => router.push('/login'), 3000);
+      setTimeout(() => router.push("/login"), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Lien invalide ou expiré');
+      setError(err.response?.data?.message || "Lien invalide ou expiré");
     } finally {
       setLoading(false);
     }
   };
 
-  if (!token) return <p className="text-center text-slate-500">Lien invalide.</p>;
+  if (!token)
+    return <p className="text-center text-slate-500">Lien invalide.</p>;
 
   return success ? (
     <div className="text-center py-4">
       <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-      <p className="font-semibold text-slate-900 dark:text-white">Mot de passe mis à jour !</p>
-      <p className="text-sm text-slate-500 mt-1">Redirection vers la connexion...</p>
+      <p className="font-semibold text-slate-900 dark:text-white">
+        Mot de passe mis à jour !
+      </p>
+      <p className="text-sm text-slate-500 mt-1">
+        Redirection vers la connexion...
+      </p>
     </div>
   ) : (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -67,7 +79,7 @@ function ResetForm() {
         placeholder="Créer un mot de passe fort"
         helperText="Au moins 12 caractères : une minuscule, une majuscule, un chiffre et un caractère spécial."
         value={password}
-        onChange={e => setPassword(e.target.value)}
+        onChange={(e) => setPassword(e.target.value)}
         required
       />
       <Input
@@ -75,11 +87,16 @@ function ResetForm() {
         type="password"
         placeholder="Répéter le mot de passe"
         value={confirm}
-        onChange={e => setConfirm(e.target.value)}
+        onChange={(e) => setConfirm(e.target.value)}
         required
       />
-      <Button type="submit" variant="primary" className="w-full" disabled={loading}>
-        {loading ? 'Mise à jour...' : 'Définir le nouveau mot de passe'}
+      <Button
+        type="submit"
+        variant="primary"
+        className="w-full"
+        disabled={loading}
+      >
+        {loading ? "Mise à jour..." : "Définir le nouveau mot de passe"}
       </Button>
     </form>
   );
@@ -96,7 +113,9 @@ export default function ResetPasswordPage() {
             </div>
             <span className="font-bold text-lg">SatisClient</span>
           </Link>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Nouveau mot de passe</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            Nouveau mot de passe
+          </h1>
         </div>
 
         <div className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-slate-800/60 rounded-2xl p-8 shadow-lg">

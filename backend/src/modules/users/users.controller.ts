@@ -13,6 +13,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { UserRole, UserStatus } from '@prisma/client';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser, JwtUser } from '../../common/decorators/current-user.decorator';
@@ -98,5 +99,52 @@ export class UsersController {
       return this.usersService.findPlatformAdmins({ skip, take });
     }
     return this.usersService.findAll(user.organizationId, { skip, take, role });
+  }
+
+  @Post()
+  @ApiOperation({ summary: "Créer un utilisateur (mail d'activation envoyé)" })
+  async createUser(
+    @CurrentUser() user: JwtUser,
+    @Body()
+    body: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      role: UserRole;
+      organizationId?: string;
+    },
+  ) {
+    return this.usersService.createUser(user, body);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: "Détail d'un utilisateur" })
+  async findOne(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    return this.usersService.findOneManaged(user, id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Supprimer un utilisateur (soft delete)' })
+  async remove(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    return this.usersService.deleteUser(user, id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: "Modifier un utilisateur (un changement d'email envoie un mail de réinitialisation)",
+  })
+  async updateUser(
+    @CurrentUser() user: JwtUser,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      role?: UserRole;
+      status?: UserStatus;
+    },
+  ) {
+    return this.usersService.updateUser(user, id, body);
   }
 }

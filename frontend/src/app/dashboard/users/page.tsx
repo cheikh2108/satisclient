@@ -481,7 +481,9 @@ export default function UsersPage() {
           <Select
             label="Rôle"
             options={isSuperAdmin
-              ? [{ value: 'super_admin', label: 'Super Admin Plateforme' }]
+              ? [showEditModal
+                  ? { value: 'org_admin', label: 'Admin Organisation' }
+                  : { value: 'super_admin', label: 'Super Admin Plateforme' }]
               : [
                   { value: 'org_admin', label: 'Admin Organisation' },
                   { value: 'quality_manager', label: 'Resp. Qualité' },
