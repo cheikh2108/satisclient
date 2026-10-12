@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
@@ -45,6 +51,18 @@ export class AuthService {
   }
 
   async login(user: any) {
+    if (user.role !== 'super_admin') {
+      const org = await this.prisma.organization.findUnique({
+        where: { id: user.organizationId },
+        select: { subscriptionStatus: true },
+      });
+      if (org?.subscriptionStatus === 'suspended') {
+        throw new ForbiddenException(
+          'Votre organisation est suspendue. Contactez support@satisclient.sn.',
+        );
+      }
+    }
+
     const payload = {
       email: user.email,
       sub: user.id,

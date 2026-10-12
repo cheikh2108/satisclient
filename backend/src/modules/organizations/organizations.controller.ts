@@ -12,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
   Request,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -243,7 +244,22 @@ export class OrganizationsController {
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateOrganizationDto: UpdateOrganizationDto,
+    @Request() req,
   ): Promise<OrganizationResponseDto> {
+    if (req.user.role !== UserRole.super_admin) {
+      // org_admin : sa propre organisation uniquement, sans toucher au plan ni au statut
+      if (id !== req.user.organizationId) {
+        throw new ForbiddenException('Accès refusé');
+      }
+      if (
+        updateOrganizationDto.subscriptionPlan !== undefined ||
+        updateOrganizationDto.subscriptionStatus !== undefined
+      ) {
+        throw new ForbiddenException(
+          "Seul un super administrateur peut modifier le plan ou le statut de l'abonnement",
+        );
+      }
+    }
     return this.organizationsService.update(id, updateOrganizationDto);
   }
 
