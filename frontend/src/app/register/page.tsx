@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api/client';
 import { AlertCircle, CheckCircle, Check, X } from 'lucide-react';
+import { BrandMark } from '@/components/brand-logo';
 
 const criteria = [
   { label: 'Au moins 12 caractères', test: (p: string) => p.length >= 12 },
@@ -63,9 +64,7 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-[#3a5a40] flex items-center justify-center">
-              <span className="text-white font-bold text-xs">SC</span>
-            </div>
+            <BrandMark size={32} className="w-8 h-8" />
             <span className="font-bold text-lg text-[#0a0a0a]">SatisClient</span>
           </Link>
           <h1 className="text-2xl font-bold text-[#0a0a0a]">Créer votre compte</h1>

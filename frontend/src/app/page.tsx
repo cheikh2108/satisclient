@@ -18,6 +18,7 @@ import {
   Users,
   Download,
 } from "lucide-react";
+import { BrandMark } from "@/components/brand-logo";
 
 // Hook: observe element visibility
 function useInView(threshold = 0.15) {
@@ -90,9 +91,7 @@ export default function LandingPage() {
             <div className="flex items-center justify-between h-16">
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#3a5a40] flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">SC</span>
-                </div>
+                <BrandMark size={32} className="w-8 h-8" />
                 <span className="font-bold text-lg text-[#0a0a0a] tracking-tight">
                   SatisClient
                 </span>
@@ -842,9 +841,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#3a5a40] flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">SC</span>
-                  </div>
+                  <BrandMark size={28} className="w-7 h-7" />
                   <span className="font-bold text-[#0a0a0a] tracking-tight">
                     SatisClient
                   </span>

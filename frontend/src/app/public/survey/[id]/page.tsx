@@ -15,6 +15,7 @@ import {
   type PublicSurvey,
   type PublicSurveyQuestion,
 } from "@/lib/api/public";
+import { BrandMark } from "@/components/brand-logo";
 
 function SurveyForm() {
   const params = useParams<{ id: string }>();
@@ -377,12 +378,7 @@ function Shell({
               className="h-10 w-10 rounded-lg object-cover"
             />
           ) : (
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-xs font-bold text-white"
-              style={{ backgroundColor: accent }}
-            >
-              SC
-            </div>
+            <BrandMark size={40} className="h-10 w-10" />
           )}
           <div>
             <p className="text-sm font-semibold">SatisClient</p>

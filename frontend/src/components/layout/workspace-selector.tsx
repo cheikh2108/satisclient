@@ -2,6 +2,7 @@
 
 import { useCurrentUser } from '@/hooks';
 import { useOrganization } from '@/hooks';
+import { BrandMark } from '@/components/brand-logo';
 
 export function WorkspaceSelector() {
   const { data: currentUser } = useCurrentUser();
@@ -18,11 +19,13 @@ export function WorkspaceSelector() {
         ? 'border-primary-200 dark:border-primary-900/60 bg-primary-50/50 dark:bg-primary-900/10'
         : 'border-slate-200 dark:border-slate-800/60 bg-white dark:bg-[#1a1a1a]'
     }`}>
-      <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${
-        isSuperAdmin ? 'bg-primary-600' : 'bg-slate-800 dark:bg-slate-700'
-      }`}>
-        <span className="text-sm font-bold text-white">{initials}</span>
-      </div>
+      {isSuperAdmin || !org?.name ? (
+        <BrandMark size={36} className="h-9 w-9" />
+      ) : (
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-slate-800 dark:bg-slate-700">
+          <span className="text-sm font-bold text-white">{initials}</span>
+        </div>
+      )}
       <div className="flex-1 text-left">
         {isSuperAdmin && (
           <p className="text-[10px] font-medium uppercase tracking-wide text-primary-600 dark:text-primary-400 mb-0.5">

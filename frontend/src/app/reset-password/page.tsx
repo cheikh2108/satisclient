@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api/client";
 import { CheckCircle, AlertCircle } from "lucide-react";
+import { BrandMark } from "@/components/brand-logo";
 
 function ResetForm() {
   const searchParams = useSearchParams();
@@ -108,9 +109,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-[#3a5a40] flex items-center justify-center">
-              <span className="text-white font-bold text-xs">SC</span>
-            </div>
+            <BrandMark size={32} className="w-8 h-8" />
             <span className="font-bold text-lg">SatisClient</span>
           </Link>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">

@@ -10,8 +10,14 @@ export const metadata: Metadata = {
   description: 'Centralisez les feedbacks, suivez les réclamations et mesurez la satisfaction de vos clients sur tous vos établissements depuis une seule plateforme.',
   keywords: ['satisfaction client', 'réclamations', 'feedback', 'NPS', 'CSAT', 'qualité', 'Afrique'],
   icons: {
-    icon: '/favicon.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icon-512.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: '/apple-touch-icon.png',
   },
+  manifest: '/site.webmanifest',
 };
 
 export default function RootLayout({

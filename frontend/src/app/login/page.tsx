@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useLogin } from '@/hooks';
 import { getErrorMessage } from '@/lib/api/client';
-import { LogIn, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { BrandMark } from '@/components/brand-logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,8 +41,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo et titre */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-600 mb-4">
-            <LogIn className="h-8 w-8 text-white" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <BrandMark size={64} className="w-16 h-16" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
             SatisClient

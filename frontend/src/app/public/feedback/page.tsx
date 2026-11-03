@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Star, CheckCircle2, AlertCircle, Loader2, Send } from "lucide-react";
 import { publicApi, type PublicFeedbackContext } from "@/lib/api/public";
+import { BrandMark } from "@/components/brand-logo";
 
 type Step = "loading" | "form" | "success" | "error";
 
@@ -334,12 +335,7 @@ function Shell({
               className="h-10 w-10 rounded-lg object-cover border border-[#e8e3d9] bg-white"
             />
           ) : (
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-white text-xs font-bold"
-              style={{ backgroundColor: accent }}
-            >
-              SC
-            </div>
+            <BrandMark size={40} className="h-10 w-10" />
           )}
           <div>
             <p className="text-sm font-semibold tracking-tight">SatisClient</p>

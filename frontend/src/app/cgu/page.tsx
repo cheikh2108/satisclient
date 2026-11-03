@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { BrandMark } from '@/components/brand-logo';
 
 export const metadata: Metadata = {
   title: "Conditions Générales d'Utilisation - SatisClient",
@@ -13,9 +14,7 @@ export default function CGUPage() {
       <nav className="border-b border-[#e8e3d9]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#3a5a40] flex items-center justify-center">
-              <span className="text-white font-bold text-xs">SC</span>
-            </div>
+            <BrandMark size={28} className="w-7 h-7" />
             <span className="font-bold text-[#0a0a0a] tracking-tight">SatisClient</span>
           </Link>
           <Link href="/" className="text-sm text-[#6a6a6a] hover:text-[#3a5a40] transition-colors">
