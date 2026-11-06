@@ -4,11 +4,14 @@
 
 > _"Votre avis améliore nos services"_
 
-[![Version](https://img.shields.io/badge/version-1.0.0--dev-blue.svg)](https://github.com/cheikh2108/satisclient)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/cheikh2108/satisclient)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-En%20développement-yellow.svg)](<>)
+[![Status](https://img.shields.io/badge/status-En%20production-brightgreen.svg)](https://satisclient.org/)
+[![Site](https://img.shields.io/badge/site-satisclient.org-0A66C2.svg)](https://satisclient.org/)
 
-> **État actuel:** Application déployable avec backend NestJS, frontend Next.js, PostgreSQL/Prisma, authentification JWT, multi-tenant, gestion des réclamations, feedbacks, analytics, notifications et administration plateforme.
+🌐 **Application en ligne : [https://satisclient.org](https://satisclient.org/)**
+
+> **État actuel:** Application en production sur [satisclient.org](https://satisclient.org/), avec backend NestJS, frontend Next.js, PostgreSQL/Prisma, authentification JWT, multi-tenant, gestion des réclamations, feedbacks, analytics, notifications et administration plateforme.
 
 ## 📋 À propos
 
@@ -396,4 +399,4 @@ Proprietary - © 2026 ATAABA Expertise. Tous droits réservés.
 ---
 
 **Version:** 1.0.0 (Septembre 2026)  
-**Statut:** 🚧 En développement actif
+**Statut:** ✅ En production — [satisclient.org](https://satisclient.org/)
